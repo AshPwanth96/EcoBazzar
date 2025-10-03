@@ -3,15 +3,13 @@ package com.ecobazzar.ecobazzar.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-
-
 public class LoginRequest {
 	
-	@NotBlank(message = "Email is Required")
-	@Email(message= "Enter a Valid email")
+	@NotBlank(message = "Email is required")
+	@Email(message = "Enter Valid mail")
 	private String email;
 	
-	@NotBlank(message= "Password is required")
+	@NotBlank(message = "Password is required")
 	private String password;
 
 	public String getEmail() {
