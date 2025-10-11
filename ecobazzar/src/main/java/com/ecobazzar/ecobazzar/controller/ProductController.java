@@ -43,4 +43,14 @@ public class ProductController {
 	public void deleteProductDetails(@PathVariable Long id) {
 		productService.deleteProductDetails(id);
 	}
+	
+	@GetMapping("/eco")
+	public List<Product> getEcoCertified(){
+		return productService.getEcoCertifiedProducts();
+	}
+	
+	@GetMapping("/eco/sorted")
+	public List<Product> getEcoCertifiedSorted(){
+		return productService.getEcoCertifiedSortedByCarbonImpact();
+	}
 }

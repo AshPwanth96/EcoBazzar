@@ -25,20 +25,7 @@ public class Product {
 	private Boolean ecoCertified;
 	
 	private Long sellerId;
-	
-	public Product() {}
 
-	public Product(Long id, String name, String details, Double price, Double carbonImpact, Boolean ecoCertified,
-			Long sellerId) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.details = details;
-		this.price = price;
-		this.carbonImpact = carbonImpact;
-		this.ecoCertified = ecoCertified;
-		this.sellerId = sellerId;
-	}
 
 	public Long getId() {
 		return id;
