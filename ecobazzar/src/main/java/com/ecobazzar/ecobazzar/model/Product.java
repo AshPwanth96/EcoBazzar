@@ -23,13 +23,20 @@ public class Product {
     private Boolean ecoCertified = false;
     
     private Long sellerId;
+    
+    private String imageUrl;
 
-    public Product() {
-        
-    }
 
     
-    public Long getId() {
+    public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public Long getId() {
         return id;
     }
 
