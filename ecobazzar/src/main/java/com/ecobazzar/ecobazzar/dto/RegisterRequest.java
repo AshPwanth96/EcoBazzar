@@ -13,15 +13,6 @@ private String name;
 @Email(message = "Enter a valid email")
 private String email;
 
-public String getRole() {
-	return role;
-}
-
-
-
-public void setRole(String role) {
-	this.role = role;
-}
 
 @NotBlank(message = "Password is required")
 @Size(min = 4, message = "Password must be 4 characters")
@@ -70,6 +61,15 @@ public void setPassword(String password) {
 	this.password = password;
 }
 	
+public String getRole() {
+	return role;
+}
+
+
+
+public void setRole(String role) {
+	this.role = role;
+}
 
 	
 }

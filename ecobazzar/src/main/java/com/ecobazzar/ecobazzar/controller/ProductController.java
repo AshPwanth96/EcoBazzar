@@ -1,56 +1,36 @@
 package com.ecobazzar.ecobazzar.controller;
 
-import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.ecobazzar.ecobazzar.model.Product;
-import com.ecobazzar.ecobazzar.service.ProductService;
+import com.ecobazzar.ecobazzar.model.User;
+import com.ecobazzar.ecobazzar.repository.UserRepository;
+import com.ecobazzar.ecobazzar.service.UserReportService;
+import com.ecobazzar.ecobazzar.dto.UserReport;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/api/reports")
 public class ProductController {
-	
-	private final ProductService productService;
-	
-	public ProductController(ProductService productService) {
-		this.productService = productService;
-	}
-	
-	@PostMapping
-	public Product addProduct(@RequestBody Product product) {
-		return productService.createProduct(product);
-	}
-	
-	@GetMapping
-	public List<Product> listAllProducts(){
-		return productService.getAllProducts();
-	}
-	
-	@PutMapping("/{id}")
-	public Product updateProductDetails(@PathVariable Long id, @RequestBody Product product) {
-		return productService.updateProductDetails(id, product);
-	}
 
-	@DeleteMapping("/{id}")
-	public void deleteProductDetails(@PathVariable Long id) {
-		productService.deleteProductDetails(id);
-	}
-	
-	@GetMapping("/eco")
-	public List<Product> getEcoCertified(){
-		return productService.getEcoCertifiedProducts();
-	}
-	
-	@GetMapping("/eco/sorted")
-	public List<Product> getEcoCertifiedSorted(){
-		return productService.getEcoCertifiedSortedByCarbonImpact();
-	}
+    private final UserReportService userReportService;
+    private final UserRepository userRepository;
+
+    public ProductController(UserReportService userReportService, UserRepository userRepository) {
+        this.userReportService = userReportService;
+        this.userRepository = userRepository;
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/user")
+    public UserReport getUserReport() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return userReportService.getUserReport(currentUser.getId());
+    }
 }
