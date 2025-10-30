@@ -14,7 +14,7 @@ import org.springframework.http.HttpMethod;
 import com.ecobazzar.ecobazzar.security.JwtFilter;
 
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true) // enables @PreAuthorize in controllers
+@EnableMethodSecurity(prePostEnabled = true) // allows @PreAuthorize on controllers
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -25,41 +25,57 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterConfig(HttpSecurity http) throws Exception {
+
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for REST APIs
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // JWT stateless
+            // ❌ Disable CSRF because we’re building a stateless REST API
+            .csrf(csrf -> csrf.disable())
+
+            // 🧩 Make session stateless (we use JWT, not HTTP sessions)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // 🔐 Configure endpoint access rules
             .authorizeHttpRequests(auth -> auth
 
-                // Public auth endpoints
+                // 1️⃣ Public authentication endpoints
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 
-                // Public product browsing (GET)
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                
-             
+                // 2️⃣ ✅ Allow Swagger & OpenAPI endpoints (for docs)
+                .requestMatchers(
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
 
-                // Product management (create/update/delete) -> SELLER or ADMIN
+                // 3️⃣ Public product browsing (GET only)
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+
+                // 4️⃣ Product management -> SELLER or ADMIN
                 .requestMatchers("/api/products/**").hasAnyRole("SELLER", "ADMIN")
 
-                // Cart / Checkout / Orders -> only USER role
+                // 5️⃣ Cart / Checkout / Orders -> USER only
                 .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**")
                     .hasRole("USER")
 
-                // Admin endpoints -> ADMIN only
+                // 6️⃣ Admin endpoints -> ADMIN only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                // Others: authenticated
+                // 7️⃣ Everything else requires authentication
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class) // Attach our JWT filter
-            .formLogin(form -> form.disable()) // Disable form-based login
-            .httpBasic(basic -> basic.disable()); // Disable browser popup login
+
+            // 🔄 Add our custom JWT filter before Spring’s UsernamePasswordAuthenticationFilter
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+
+            // 🚫 Disable default login forms and browser popups
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable());
 
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // For hashing passwords
+        // ✅ Strong password hashing
+        return new BCryptPasswordEncoder();
     }
 }
