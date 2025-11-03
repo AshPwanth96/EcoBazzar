@@ -35,12 +35,14 @@ public class AdminService {
 	}
 	
 	public User approveSeller(Long id) {
-		User user = userRepository.findById(id)
-				.orElseThrow(()-> new RuntimeException("User not Found"));
-		user.setRole("SELLER");
-		return userRepository.save(user);
-		
+	    User user = userRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+
+	   
+	    user.setRole("ROLE_SELLER");
+	    return userRepository.save(user);
 	}
+
 
 	public List<User> getAllUsers(){
 		return userRepository.findAll();

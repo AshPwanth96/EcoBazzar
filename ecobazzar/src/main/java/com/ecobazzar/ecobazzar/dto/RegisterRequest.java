@@ -6,34 +6,26 @@ import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
 
-@NotBlank(message= "Name is Required")
-private String name;
+    @NotBlank(message = "Name is Required")
+    private String name;
 
-@NotBlank(message = "EMail is Required")
-@Email(message = "Enter a valid email")
-private String email;
+    @NotBlank(message = "Email is Required")
+    @Email(message = "Enter a valid email")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    @Size(min = 4, message = "Password must be 4 characters")
+    private String password;
+
+    public RegisterRequest() {}
+
+    public RegisterRequest(String name, String email, String password) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+    }
 
 
-@NotBlank(message = "Password is required")
-@Size(min = 4, message = "Password must be 4 characters")
-private String password;
-
-private String role;
-
-public RegisterRequest() {}
-
-
-
-public RegisterRequest(@NotBlank(message = "Name is Required") String name,
-		@NotBlank(message = "EMail is Required") @Email(message = "Enter a valid email") String email,
-		@NotBlank(message = "Password is required") @Size(min = 4, message = "Password must be 4 characters") String password,
-		String role) {
-	super();
-	this.name = name;
-	this.email = email;
-	this.password = password;
-	this.role = role;
-}
 
 
 
@@ -61,15 +53,6 @@ public void setPassword(String password) {
 	this.password = password;
 }
 	
-public String getRole() {
-	return role;
-}
-
-
-
-public void setRole(String role) {
-	this.role = role;
-}
 
 	
 }

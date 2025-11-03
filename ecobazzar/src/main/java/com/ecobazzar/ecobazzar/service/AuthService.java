@@ -31,12 +31,8 @@ public class AuthService {
             throw new RuntimeException("Email already exists!");
         }
 
-        // Default role = ROLE_USER
-        String role = request.getRole() == null ? "ROLE_USER" : "ROLE_" + request.getRole().toUpperCase();
-
-        if (role.equals("ROLE_ADMIN")) {
-            throw new RuntimeException("Cannot self-register as admin!");
-        }
+        // ✅ Always assign ROLE_USER (ignore whatever is sent in request)
+        String role = "ROLE_USER";
 
         User user = new User();
         user.setName(request.getName());
@@ -49,6 +45,7 @@ public class AuthService {
 
         return new UserResponse(saved.getId(), saved.getName(), saved.getEmail(), saved.getRole(), 0, null);
     }
+
 
     // ✅ Login user
     public UserResponse login(LoginRequest login) {
