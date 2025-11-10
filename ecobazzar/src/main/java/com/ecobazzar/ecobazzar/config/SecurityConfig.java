@@ -13,6 +13,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.ecobazzar.ecobazzar.security.JwtFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
@@ -27,29 +31,32 @@ public class SecurityConfig {
     public SecurityFilterChain filterConfig(HttpSecurity http) throws Exception {
 
         http
+            .cors(cors -> {})   // ✅ allows Angular to connect
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
 
-                // public endpoints
+                // ✅ public: anyone can login/register
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+
+                // ✅ public: swagger
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                // public product browsing
-                .requestMatchers(HttpMethod.GET, "/api/products/**", "/products/**").permitAll()
+                // ✅ public: browsing products
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
 
-                // product management (SELLER or ADMIN)
-                .requestMatchers(HttpMethod.POST, "/api/products/**", "/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**", "/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
+                // ✅ seller + admin only: add/edit/delete products
+                .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
 
-                // cart / checkout / orders (USER only)
+                // ✅ only logged-in USER:
                 .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**").hasAuthority("ROLE_USER")
 
-                // admin endpoints
+                // ✅ only ADMIN:
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
-                // anything else
+                // ✅ any other request must be logged in
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -59,8 +66,23 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ✅ Password encryption
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    // ✅ most important: CORS (Angular → Spring Boot)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin("http://localhost:4200"); // Angular port
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
