@@ -1,0 +1,9 @@
+<h2 class="text-xl font-bold mb-3">Create Account</h2>
+
+<form [formGroup]="regForm" (ngSubmit)="submit()" class="flex flex-col gap-3 max-w-sm">
+  <input class="border p-2 rounded" placeholder="Full Name" formControlName="name" />
+  <input class="border p-2 rounded" placeholder="Email" formControlName="email" />
+  <input class="border p-2 rounded" placeholder="Password" type="password" formControlName="password" />
+  
+  <button class="bg-green-600 text-white p-2 rounded" type="submit">Register</button>
+</form>

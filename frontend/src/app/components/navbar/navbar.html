@@ -1,0 +1,11 @@
+<a routerLink="/" class="hover:underline">Home</a>
+<a routerLink="/products" class="hover:underline">Products</a>
+<a routerLink="/cart" class="hover:underline">Cart</a>
+
+<!-- show only if user NOT logged in -->
+<a routerLink="/login" *ngIf="!auth.isLoggedIn()" class="hover:underline">Login</a>
+<a routerLink="/register" *ngIf="!auth.isLoggedIn()" class="hover:underline">Register</a>
+
+<!-- show only if user IS logged in -->
+<span *ngIf="auth.isLoggedIn()">Hi, {{ auth.getName() }}</span>
+<button *ngIf="auth.isLoggedIn()" (click)="auth.logout()" class="hover:underline">Logout</button>
