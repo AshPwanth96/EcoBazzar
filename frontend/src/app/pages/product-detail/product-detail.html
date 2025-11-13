@@ -1,0 +1,54 @@
+<p>product-detail works!</p>
+<div class="max-w-4xl mx-auto p-6">
+  <ng-container *ngIf="!loading; else loadingTpl">
+    <div *ngIf="product; else notFoundTpl" class="grid md:grid-cols-2 gap-6">
+      <!-- Image -->
+      <div>
+        <img
+          [src]="product.imageUrl || 'assets/placeholder.png'"
+          [alt]="product.name"
+          class="rounded-lg shadow-md w-full h-80 object-cover"
+        />
+      </div>
+
+      <!-- Details -->
+      <div>
+        <h1 class="text-3xl font-bold mb-2">{{ product.name }}</h1>
+        <p class="text-gray-600 mb-3">{{ product.details }}</p>
+
+        <p class="text-xl font-semibold mb-2">💰 {{ product.price | currency:'INR' }}</p>
+
+        <p *ngIf="product.ecoCertified" class="text-green-600 font-medium mb-3">🌱 Eco Certified</p>
+        <p class="text-sm text-gray-500 mb-5">CO₂ Impact: {{ product.carbonImpact ?? 'N/A' }} kg</p>
+
+        <div class="flex items-center gap-3 mb-4">
+          <label class="flex items-center gap-2">
+            Qty:
+            <input type="number" [(ngModel)]="qty" min="1" class="w-20 border rounded p-1 text-center" />
+          </label>
+
+          <button
+            (click)="addToCart()"
+            [disabled]="added"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow transition disabled:opacity-60"
+          >
+            {{ added ? '✅ Added' : '🛒 Add to Cart' }}
+          </button>
+        </div>
+
+        <button (click)="goBack()" class="text-blue-600 hover:underline">← Back to Products</button>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #loadingTpl>
+    <p class="text-center text-gray-500 mt-10">⏳ Loading product details...</p>
+  </ng-template>
+
+  <ng-template #notFoundTpl>
+    <p class="text-center text-red-600 mt-6">{{ error || 'Product not found.' }}</p>
+    <div class="text-center mt-4">
+      <button (click)="goBack()" class="text-blue-600 hover:underline">← Back to Products</button>
+    </div>
+  </ng-template>
+</div>

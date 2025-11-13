@@ -1,43 +1,47 @@
-<div style="max-width:1100px; margin:auto; padding:16px;">
-  <h2 style="font-size:24px; font-weight:bold;">🌿 EcoBazaar Products</h2>
+<div class="max-w-5xl mx-auto p-4">
+  <h2 class="text-2xl font-bold mb-4">🌿 EcoBazaar Products — Browse & Discover</h2>
 
-  <!-- 🔍 Search and Filter -->
-  <div style="display:flex; gap:10px; margin:10px 0;">
+  <div class="flex flex-col md:flex-row gap-3 mb-4 items-center">
     <input
       type="text"
-      placeholder="Search products..."
+      placeholder="🔎 Search Products..."
       [(ngModel)]="searchText"
       (ngModelChange)="onSearchChange()"
-      style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;"
+      class="flex-1 border rounded p-2 focus:outline-none focus:ring-2 focus:ring-green-300"
     />
-    <label style="display:flex; align-items:center; gap:6px;">
+
+    <label class="flex items-center gap-2 text-sm mt-2 md:mt-0">
       <input type="checkbox" [(ngModel)]="ecoOnly" (change)="onEcoToggle()" />
-      🌱 Eco Only
+      <span class="ml-1">🌱 <strong>Eco Only</strong></span>
     </label>
   </div>
 
-  <!-- Loading and Error -->
-  <p *ngIf="loading">⏳ Loading products...</p>
-  <p *ngIf="error" style="color:red;">{{error}}</p>
+  <p *ngIf="loading" class="text-center text-gray-600">⏳ Loading products...</p>
+  <p *ngIf="error" class="text-center text-red-600">{{ error }}</p>
 
-  <!-- Product Grid -->
-  <div
-    *ngIf="!loading && !error"
-    style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;"
-  >
-    <div
-      *ngFor="let p of filtered"
-      style="border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.1);"
-    >
-      <img
-        [src]="p.imageUrl || 'assets/placeholder.png'"
-        alt="{{p.name}}"
-        loading="lazy"
-        style="width:100%; height:160px; object-fit:cover; border-radius:6px;"
-      />
-      <h3>{{p.name}}</h3>
-      <p>💰 {{p.price | currency:'INR'}}</p>
-      <p *ngIf="p.ecoCertified" style="color:green; font-weight:bold;">🌱 Eco Certified</p>
-    </div>
+  <div *ngIf="!loading && !error" class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+    <a *ngFor="let p of filtered" [routerLink]="['/products', p.id]"
+       class="block border rounded-lg p-3 text-center shadow-sm hover:-translate-y-1 transition-transform bg-white">
+      <div class="relative overflow-hidden rounded-md">
+        <img [src]="p.imageUrl || 'assets/placeholder.png'"
+             [alt]="p.name"
+             loading="lazy"
+             class="w-full h-40 object-cover rounded-md" />
+      </div>
+
+      <h3 class="font-semibold mt-2 text-lg">{{ p.name }}</h3>
+
+      <p class="mt-1">💰 <span class="font-medium">{{ p.price | currency:'INR' }}</span></p>
+
+      <p *ngIf="p.ecoCertified" class="text-green-600 font-medium mt-2">🌱 Eco Certified</p>
+
+      <div class="mt-3 text-xs text-gray-500">
+        <span *ngIf="p.carbonImpact">🌍 {{ p.carbonImpact }} kg CO₂</span>
+      </div>
+    </a>
   </div>
+
+  <p *ngIf="!loading && !error && filtered.length === 0" class="text-center text-gray-600 mt-6">
+    😕 No products found — try a different search or toggle.
+  </p>
 </div>

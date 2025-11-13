@@ -47,4 +47,12 @@ public class ProductService {
     public List<Product> getEcoCertifiedSortedByCarbonImpact() {
         return productRepository.findByEcoCertifiedTrueOrderByCarbonImpactAsc();
     }
+    
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+    }
+
+    
+
 }
