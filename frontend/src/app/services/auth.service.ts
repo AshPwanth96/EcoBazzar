@@ -3,13 +3,15 @@ import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 import { tap } from "rxjs";
 
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private baseUrl = 'http://localhost:8080/api/auth';
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+ 
   ) {}
 
   register(data: any) {
@@ -22,6 +24,9 @@ export class AuthService {
         localStorage.setItem('token', res.token);
         localStorage.setItem('role', res.role);
         localStorage.setItem('name', res.name);
+
+        
+    
       })
     );
   }
@@ -39,4 +44,3 @@ export class AuthService {
     return localStorage.getItem('name');
   }
 }
-

@@ -3,26 +3,30 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class CartService {
+  private base = 'http://localhost:8080/api/cart';
 
-  private base = 'http:localhost:8080/api/cart'
+  constructor(private http: HttpClient) {}
 
-  constructor(private http:HttpClient){}
-
-  add(productId:number, quantity:number = 1):Observable<any>{
-
-    return this.http.post(this.base, {productId, quantity});
+  // Add item
+  add(productId: number, quantity: number = 1): Observable<any> {
+    return this.http.post(this.base, { productId, quantity });
   }
 
-  getSummary():Observable<any>{
-    return this.http.get(this.base)
-
+  // Get all user cart items + summary DTO
+  getSummary(): Observable<any> {
+    return this.http.get(this.base);
   }
 
-  remove(itemId:number):Observable<any>{
-    return this.http.delete(`${this.base}/${itemId}`);  
+  // Remove one item entirely
+  remove(itemId: number): Observable<any> {
+    return this.http.delete(`${this.base}/${itemId}`);
   }
-  
+
+  // Update quantity (optional improvement)
+  update(itemId: number, quantity: number): Observable<any> {
+    return this.http.post(`${this.base}`, { id: itemId, quantity });
+  }
 }

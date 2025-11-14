@@ -3,22 +3,26 @@ import { Home } from './pages/home/home';
 import { Login } from './pages/login/login';
 import { Register } from './pages/register/register';
 import { Admin } from './pages/admin/admin';
-import { Cart } from './pages/cart/cart';
+
 import { AuthGuard } from './guards/auth.guard';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { RoleGuard } from './guards/role.guard';
 import { ProductList } from './pages/product-list/product-list';
 import { ProductDetail } from './pages/product-detail/product-detail';
+import { Cart } from './pages/cart/cart';
 
 export const routes: Routes = [
   { path: '', component: Home },
   { path: 'login', component: Login },
   { path: 'register', component: Register },
-  { path: 'cart', component: Cart },// ✅ new route
+
   { path: 'dashboard', component: Dashboard, canActivate: [AuthGuard] },
   {path: 'products', component: ProductList},
+{ path: 'cart', component: Cart, canActivate: [AuthGuard] },
 
   { path: 'products/:id', component: ProductDetail },
+
+
 
   {
     path: 'admin',
