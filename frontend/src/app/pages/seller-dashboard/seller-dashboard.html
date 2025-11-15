@@ -1,0 +1,82 @@
+<div class="container mx-auto p-4 max-w-5xl">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-semibold">🧑‍🌾 Seller Dashboard</h2>
+    <div>
+      <button class="px-4 py-2 rounded bg-blue-600 text-white" (click)="goAdd()">+ Add Product</button>
+    </div>
+  </div>
+
+  <!-- stats -->
+  <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="p-4 border rounded">
+      <div class="text-sm text-gray-500">Total products</div>
+      <div class="text-2xl font-bold">{{ stats.total }}</div>
+    </div>
+
+    <div class="p-4 border rounded">
+      <div class="text-sm text-gray-500">Certified</div>
+      <div class="text-2xl font-bold">{{ stats.certified }}</div>
+    </div>
+
+    <div class="p-4 border rounded">
+      <div class="text-sm text-gray-500">Requested</div>
+      <div class="text-2xl font-bold">{{ stats.requested }}</div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-8">Loading products…</div>
+  <div *ngIf="error" class="text-red-600 mb-4">{{ error }}</div>
+
+  <div *ngIf="!loading && products?.length === 0" class="text-center py-8 text-gray-600">
+    No products yet. Click "Add Product" to create one.
+  </div>
+
+  <div *ngIf="products?.length">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="text-left border-b">
+          <th class="py-2">Image</th>
+          <th class="py-2">Name</th>
+          <th class="py-2">Price</th>
+          <th class="py-2">Carbon impact</th>
+          <th class="py-2">Status</th>
+          <th class="py-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of products" class="border-b hover:bg-gray-50">
+          <td class="py-2 w-24">
+            <img *ngIf="p.imageUrl" [src]="p.imageUrl" alt="{{p.name}}" class="h-16 w-16 object-cover rounded" />
+            <div *ngIf="!p.imageUrl" class="h-16 w-16 flex items-center justify-center bg-gray-100 rounded text-sm text-gray-500">No image</div>
+          </td>
+
+          <td class="py-2">
+            <div class="font-medium">{{ p.name }}</div>
+            <div class="text-sm text-gray-500">{{ p.details }}</div>
+          </td>
+
+          <td class="py-2">
+            <div>{{ p.price | currency }}</div>
+          </td>
+
+          <td class="py-2">
+            <div>{{ p.carbonImpact || '-' }}</div>
+          </td>
+
+          <td class="py-2">
+            <div *ngIf="p.ecoCertified" class="text-green-600 font-semibold">Certified ✅</div>
+            <div *ngIf="!p.ecoCertified && p.ecoRequested" class="text-yellow-600 font-semibold">Requested ⏳</div>
+            <div *ngIf="!p.ecoCertified && !p.ecoRequested" class="text-gray-600">Not requested</div>
+          </td>
+
+          <td class="py-2">
+            <div class="flex gap-2">
+              <button class="px-3 py-1 rounded border" (click)="edit(p)">Edit</button>
+              <button class="px-3 py-1 rounded border text-red-600" (click)="deleteProduct(p.id)">Delete</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

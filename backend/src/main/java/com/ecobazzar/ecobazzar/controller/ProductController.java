@@ -1,8 +1,6 @@
 package com.ecobazzar.ecobazzar.controller;
 
 import java.util.List;
-
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,7 +14,6 @@ import com.ecobazzar.ecobazzar.service.ProductService;
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
-
     private final ProductService productService;
     private final UserRepository userRepository;
 
@@ -30,15 +27,31 @@ public class ProductController {
     public Product addProduct(@RequestBody Product product) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-        User seller = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Seller not found"));
+        User seller = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Seller not found"));
         product.setSellerId(seller.getId());
         return productService.createProduct(product);
     }
 
+ 
+ // public marketplace -> show ALL products (including non-certified)
     @GetMapping
     public List<Product> listAllProducts() {
         return productService.getAllProducts();
+    }
+
+
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    @GetMapping("/seller")
+    public List<Product> listSellerProducts() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        User seller = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Seller not found"));
+        return productService.getProductsBySellerId(seller.getId());
+    }
+
+    @GetMapping("/{id}")
+    public Product getProductById(@PathVariable Long id) {
+        return productService.getProductById(id);
     }
 
     @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
@@ -52,24 +65,7 @@ public class ProductController {
     public void deleteProductDetails(@PathVariable Long id) {
         productService.deleteProductDetails(id);
     }
-
-    @GetMapping("/eco")
-    public List<Product> getEcoCertified() {
-        return productService.getEcoCertifiedProducts();
-    }
-
-    @GetMapping("/eco/sorted")
-    public List<Product> getEcoCertifiedSorted() {
-        return productService.getEcoCertifiedSortedByCarbonImpact();
-    }
-    
-    @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Long id) {
-        return productService.getProductById(id);
-    }
-
-
-
-
-
 }
+
+
+

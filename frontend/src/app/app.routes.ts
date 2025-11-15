@@ -10,6 +10,8 @@ import { RoleGuard } from './guards/role.guard';
 import { ProductList } from './pages/product-list/product-list';
 import { ProductDetail } from './pages/product-detail/product-detail';
 import { Cart } from './pages/cart/cart';
+import { SellerProduct } from './pages/seller-product/seller-product';
+import { SellerDashboard } from './pages/seller-dashboard/seller-dashboard';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -21,6 +23,10 @@ export const routes: Routes = [
 { path: 'cart', component: Cart, canActivate: [AuthGuard] },
 
   { path: 'products/:id', component: ProductDetail },
+
+  { path: 'seller/product', component: SellerProduct, canActivate: [AuthGuard] },
+{ path: 'seller/dashboard', component: SellerDashboard, canActivate: [AuthGuard] },
+
 
 
 

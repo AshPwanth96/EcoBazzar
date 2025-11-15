@@ -15,5 +15,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(String namePart);
 
+    List<Product> findByEcoRequestedTrue();
+    
+    List<Product> findBySellerId(Long sellerId);
+
+
     // No need to declare findById — JpaRepository already provides Optional<Product> findById(ID id);
 }

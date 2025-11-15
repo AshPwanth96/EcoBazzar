@@ -1,11 +1,42 @@
-<a routerLink="/" class="hover:underline">Home</a>
-<a routerLink="/products" class="hover:underline">Products</a>
-<a routerLink="/cart" class="hover:underline">Cart</a>
+<mat-toolbar class="px-4">
+  <div class="flex items-center gap-4 w-full">
 
-<!-- show only if user NOT logged in -->
-<a routerLink="/login" *ngIf="!auth.isLoggedIn()" class="hover:underline">Login</a>
-<a routerLink="/register" *ngIf="!auth.isLoggedIn()" class="hover:underline">Register</a>
+    <!-- Left Links -->
+    <a routerLink="/" class="hover:underline">Home</a>
+    <a routerLink="/products" class="hover:underline">Products</a>
+    <a routerLink="/cart" class="hover:underline">Cart</a>
 
-<!-- show only if user IS logged in -->
-<span *ngIf="auth.isLoggedIn()">Hi, {{ auth.getName() }}</span>
-<button *ngIf="auth.isLoggedIn()" (click)="auth.logout()" class="hover:underline">Logout</button>
+    <div class="flex-1"></div>
+
+    <!-- If NOT logged in -->
+    <ng-container *ngIf="!auth.isLoggedIn()">
+      <a routerLink="/login" class="hover:underline">Login</a>
+      <a routerLink="/register" class="hover:underline">Register</a>
+    </ng-container>
+
+    <!-- If LOGGED IN -->
+    <ng-container *ngIf="auth.isLoggedIn()">
+
+      <!-- Normal user -->
+      <a routerLink="/dashboard" *ngIf="auth.isUser()" class="hover:underline">
+        Dashboard
+      </a>
+
+      <!-- Seller -->
+      <ng-container *ngIf="auth.isSeller()">
+        <a routerLink="/seller/dashboard" class="hover:underline">Seller Dashboard</a>
+        <a routerLink="/seller/product" class="hover:underline">Add Product</a>
+      </ng-container>
+
+      <!-- Admin -->
+      <ng-container *ngIf="auth.isAdmin()">
+        <a routerLink="/admin/dashboard" class="hover:underline">Admin Dashboard</a>
+      </ng-container>
+
+      <!-- Greeting + Logout -->
+      <span class="mx-2">Hi, {{ auth.getName() }}</span>
+      <button (click)="logout()" class="hover:underline">Logout</button>
+    </ng-container>
+
+  </div>
+</mat-toolbar>
