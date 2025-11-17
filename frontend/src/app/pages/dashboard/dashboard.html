@@ -1,11 +1,9 @@
 <div class="max-w-5xl mx-auto px-6 py-10">
 
-  <!-- Header -->
-  <div class="mb-10">
+  <div class="mb-6">
     <h2 class="text-4xl font-extrabold text-green-700 flex items-center gap-3">
       🌿 Hello, {{ name }}
     </h2>
-
     <p class="text-gray-600 mt-2 text-lg">
       Role:
       <span class="font-semibold uppercase tracking-wide text-gray-800">
@@ -14,75 +12,95 @@
     </p>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid lg:grid-cols-4 sm:grid-cols-2 gap-6 mb-10">
-
-    <!-- Total Purchases -->
-    <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
-      <div class="text-gray-500 text-sm">Total Purchases</div>
-      <div class="text-4xl font-bold text-green-700 mt-3">
-        {{ report.totalPurchase }}
-      </div>
-    </div>
-
-    <!-- Total Spent -->
-    <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
-      <div class="text-gray-500 text-sm">Total Spent</div>
-      <div class="text-3xl font-bold text-blue-600 mt-3">
-        ₹{{ report.totalSpent }}
-      </div>
-    </div>
-
-    <!-- Carbon Used -->
-    <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
-      <div class="text-gray-500 text-sm">Carbon Used</div>
-      <div class="text-4xl font-bold text-red-600 mt-3">
-        {{ report.totalCarbonUsed }} kg
-      </div>
-    </div>
-
-    <!-- Carbon Saved -->
-    <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
-      <div class="text-gray-500 text-sm">Carbon Saved</div>
-      <div class="text-4xl font-bold text-emerald-600 mt-3">
-        {{ report.totalCarbonSaved }} kg
-      </div>
-    </div>
-
+  <div *ngIf="loading" class="flex justify-center my-8">
+    <div class="loader">Loading...</div>
   </div>
 
-  <!-- Eco Badge -->
-  <div class="relative overflow-hidden rounded-3xl p-6 shadow-xl text-white bg-gradient-to-r"
-       [ngClass]="getBadgeColor()">
+  <div *ngIf="error" class="bg-red-100 text-red-700 p-4 rounded mb-6">
+    {{ error }}
+  </div>
 
-    <div class="absolute inset-0 bg-white/10 animate-pulse"></div>
+  <ng-container *ngIf="!loading && report; else noData">
 
-    <div class="relative z-10">
-      <div class="text-white/90 text-sm">Eco Badge</div>
+    <div class="grid lg:grid-cols-4 sm:grid-cols-2 gap-6 mb-10">
+      <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
+        <div class="text-gray-500 text-sm">Total Purchases</div>
+        <div class="text-4xl font-bold text-green-700 mt-3">{{ report.totalPurchase }}</div>
+      </div>
 
-      <div class="text-3xl font-extrabold mt-3 drop-shadow">
-        {{ report.ecoBadge }}
+      <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
+        <div class="text-gray-500 text-sm">Total Spent</div>
+        <div class="text-3xl font-bold text-blue-600 mt-3">
+          ₹{{ report.totalSpent | number:'1.0-2' }}
+        </div>
+      </div>
+
+      <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
+        <div class="text-gray-500 text-sm">Carbon Used</div>
+        <div class="text-4xl font-bold text-red-600 mt-3">
+          {{ report.totalCarbonUsed }} kg
+        </div>
+      </div>
+
+      <div class="bg-white border rounded-3xl p-6 shadow hover:shadow-xl transition-all">
+        <div class="text-gray-500 text-sm">Carbon Saved</div>
+        <div class="text-4xl font-bold mt-3"
+             [ngClass]="report.totalCarbonSaved > 0 ? 'text-emerald-600' : 'text-gray-400'">
+          {{ report.totalCarbonSaved }} kg
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Buttons -->
-  <div class="grid sm:grid-cols-2 gap-6 mt-12">
+    <div class="relative overflow-hidden rounded-3xl p-6 shadow-xl text-white bg-gradient-to-r"
+         [ngClass]="getBadgeColor()">
+      <div class="relative z-10">
+        <div class="text-white/90 text-sm">Eco Badge</div>
+        <div class="text-3xl font-extrabold mt-3 drop-shadow">
+          {{ report.totalCarbonSaved > 0 ? report.ecoBadge : '🚫 No Eco Savings Yet' }}
+        </div>
+      </div>
+    </div>
 
-    <a routerLink="/products"
-       class="flex justify-center items-center gap-2 py-4 rounded-2xl font-semibold shadow bg-green-600 text-white hover:bg-green-700 transition-all hover:scale-[1.02]">
-      🌱 Browse Eco Products
-    </a>
+    <div *ngIf="report.totalCarbonSaved === 0"
+         class="mt-3 text-gray-500 text-sm">
+      You haven’t saved any carbon yet. Try eco-friendly products 🌱
+    </div>
 
-    <a routerLink="/cart"
-       class="flex justify-center items-center gap-2 py-4 rounded-2xl font-semibold shadow bg-blue-600 text-white hover:bg-blue-700 transition-all hover:scale-[1.02]">
-      🛒 Go to Cart
-    </a>
+    <div class="mt-8 bg-white border rounded-3xl p-6 shadow">
+      <h3 class="text-lg font-semibold mb-4 text-green-700">Recent Carbon Saved</h3>
+      <div style="height: 250px;">
+        <canvas id="savedChart" style="height: 250px;"></canvas>
+      </div>
+    </div>
 
-  </div>
+    <div class="mt-8 bg-white border rounded-3xl p-6 shadow">
+      <h3 class="text-lg font-semibold mb-4 text-red-600 flex items-center gap-2">
+        ❗ Carbon Used (Alarming)
+      </h3>
+      <div style="height: 250px;">
+        <canvas id="usedChart" style="height: 250px;"></canvas>
+      </div>
+    </div>
 
-  <div class="mt-16 text-center text-gray-500 text-sm">
-    © 2025 EcoBazaar | Built for a Cleaner Planet 🌍
-  </div>
+    <div class="grid sm:grid-cols-2 gap-6 mt-12">
+      <a routerLink="/products"
+         class="flex justify-center items-center gap-2 py-4 rounded-2xl font-semibold shadow bg-green-600 text-white hover:bg-green-700 transition-all hover:scale-[1.02]">
+        🌱 Browse Eco Products
+      </a>
+
+      <a routerLink="/cart"
+         class="flex justify-center items-center gap-2 py-4 rounded-2xl font-semibold shadow bg-blue-600 text-white hover:bg-blue-700 transition-all hover:scale-[1.02]">
+        🛒 Go to Cart
+      </a>
+    </div>
+
+
+  </ng-container>
+
+  <ng-template #noData>
+    <div class="text-center py-12 text-gray-500">
+      No report data available yet.
+    </div>
+  </ng-template>
 
 </div>
