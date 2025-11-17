@@ -1,63 +1,73 @@
 package com.ecobazzar.ecobazzar.dto;
 
 import java.util.List;
-
 import com.ecobazzar.ecobazzar.model.CartItem;
 
 public class CartSummaryDto {
 
-	private List<CartItem> items;
-	
-	private double totalPrice;
-	
-	private double totalCarbon;
-	
-	private String ecoSuggestion;
-	
-	public CartSummaryDto() {}
-	
+    private List<CartItem> items;
 
-	public CartSummaryDto(List<CartItem> items, double totalPrice, double totalCarbon, String ecoSuggestion) {
-		super();
-		this.items = items;
-		this.totalPrice = totalPrice;
-		this.totalCarbon = totalCarbon;
-		this.ecoSuggestion = ecoSuggestion;
-	}
+    private double totalPrice;
 
-	public List<CartItem> getItems() {
-		return items;
-	}
+    private double totalCarbonUsed;  
+    private double totalCarbonSaved;
 
-	public void setItems(List<CartItem> items) {
-		this.items = items;
-	}
+    private String ecoSuggestion;
 
-	public Double getTotalPrice() {
-		return totalPrice;
-	}
+    public CartSummaryDto() {}
 
-	public void setTotalPrice(double totalPrice) {
-		this.totalPrice = totalPrice;
-	}
+    // Correct constructor order
+    public CartSummaryDto(
+            List<CartItem> items,
+            double totalPrice,
+            double totalCarbonUsed,
+            double totalCarbonSaved,
+            String ecoSuggestion) {
 
-	public Double getTotalCarbon() {
-		return totalCarbon;
-	}
+        this.items = items;
+        this.totalPrice = totalPrice;
+        this.totalCarbonUsed = totalCarbonUsed;
+        this.totalCarbonSaved = totalCarbonSaved;
+        this.ecoSuggestion = ecoSuggestion;
+    }
 
-	public void setTotalCarbon(double totalCarbon) {
-		this.totalCarbon = totalCarbon;
-	}
+    public List<CartItem> getItems() {
+        return items;
+    }
 
-	public String getEcoSuggestion() {
-		return ecoSuggestion;
-	}
+    public void setItems(List<CartItem> items) {
+        this.items = items;
+    }
 
-	public void setEcoSuggestion(String ecoSuggestion) {
-		this.ecoSuggestion = ecoSuggestion;
-	}
-	
-	
-	
-	
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public double getTotalCarbonUsed() {
+        return totalCarbonUsed;
+    }
+
+    public void setTotalCarbonUsed(double totalCarbonUsed) {
+        this.totalCarbonUsed = totalCarbonUsed;
+    }
+
+    public double getTotalCarbonSaved() {
+        return totalCarbonSaved;
+    }
+
+    public void setTotalCarbonSaved(double totalCarbonSaved) {
+        this.totalCarbonSaved = totalCarbonSaved;
+    }
+
+    public String getEcoSuggestion() {
+        return ecoSuggestion;
+    }
+
+    public void setEcoSuggestion(String ecoSuggestion) {
+        this.ecoSuggestion = ecoSuggestion;
+    }
 }

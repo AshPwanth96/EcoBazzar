@@ -11,71 +11,57 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "orders")
 public class Order {
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
 
-	private Long userId;
-	
-	private LocalDate orderDate;
-	
-	private double totalPrice;
-	
-	private double totalCarbon;
-	
-	public Order() {}
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	public Order(Long id, Long userId, LocalDate orderDate, double totalPrice, double totalCarbon) {
-		super();
-		this.id = id;
-		this.userId = userId;
-		this.orderDate = orderDate;
-		this.totalPrice = totalPrice;
-		this.totalCarbon = totalCarbon;
-	}
+    private Long userId;
 
-	public Long getId() {
-		return id;
-	}
+    private LocalDate orderDate;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    // NEW fields
+    private double carbonUsed;
+    private double carbonSaved;
 
-	public Long getUserId() {
-		return userId;
-	}
+    private double totalPrice;
 
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
+    public Order() {}
 
-	public LocalDate getOrderDate() {
-		return orderDate;
-	}
+    // UPDATED constructor (must match OrderService)
+    public Order(Long id, Long userId, LocalDate orderDate,
+                 double carbonUsed, double carbonSaved, double totalPrice) {
+        this.id = id;
+        this.userId = userId;
+        this.orderDate = orderDate;
+        this.carbonUsed = carbonUsed;
+        this.carbonSaved = carbonSaved;
+        this.totalPrice = totalPrice;
+    }
 
-	public void setOrderDate(LocalDate orderDate) {
-		this.orderDate = orderDate;
-	}
+    // GETTERS & SETTERS
 
-	public double getTotalPrice() {
-		return totalPrice;
-	}
+    public Long getId() { return id; }
 
-	public void setTotalPrice(double totalPrice) {
-		this.totalPrice = totalPrice;
-	}
+    public void setId(Long id) { this.id = id; }
 
-	public double getTotalCarbon() {
-		return totalCarbon;
-	}
+    public Long getUserId() { return userId; }
 
-	public void setTotalCarbon(double totalCarbon) {
-		this.totalCarbon = totalCarbon;
-	}
-	
-	
-	
-	
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public LocalDate getOrderDate() { return orderDate; }
+
+    public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }
+
+    public double getCarbonUsed() { return carbonUsed; }
+
+    public void setCarbonUsed(double carbonUsed) { this.carbonUsed = carbonUsed; }
+
+    public double getCarbonSaved() { return carbonSaved; }
+
+    public void setCarbonSaved(double carbonSaved) { this.carbonSaved = carbonSaved; }
+
+    public double getTotalPrice() { return totalPrice; }
+
+    public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }
 }

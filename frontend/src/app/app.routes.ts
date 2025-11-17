@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
 import { Login } from './pages/login/login';
 import { Register } from './pages/register/register';
-import { Admin } from './pages/admin/admin';
 
 import { AuthGuard } from './guards/auth.guard';
 import { Dashboard } from './pages/dashboard/dashboard';
@@ -18,17 +17,51 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
 
-  { path: 'dashboard', component: Dashboard, canActivate: [AuthGuard] },
-  {path: 'products', component: ProductList},
-{ path: 'cart', component: Cart, canActivate: [AuthGuard] },
 
-  { path: 'products/:id', component: ProductDetail },
-
-  { path: 'seller/product', component: SellerProduct, canActivate: [AuthGuard] },
-{ path: 'seller/dashboard', component: SellerDashboard, canActivate: [AuthGuard] },
-
+  { 
+    path: 'dashboard', 
+    component: Dashboard, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_USER'] }
+  },
 
 
+  {
+    path: 'products',
+    component: ProductList,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_USER'] }
+  },
+
+
+  {
+    path: 'products/:id',
+    component: ProductDetail,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_USER'] }
+  },
+
+
+  { 
+    path: 'cart', 
+    component: Cart, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_USER'] }
+  },
+
+  { 
+    path: 'seller/product', 
+    component: SellerProduct, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_SELLER'] }
+  },
+
+  { 
+    path: 'seller/dashboard', 
+    component: SellerDashboard, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ROLE_SELLER'] }
+  },
 
   {
     path: 'admin',

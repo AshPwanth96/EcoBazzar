@@ -13,53 +13,71 @@ import com.ecobazzar.ecobazzar.repository.ProductRepository;
 
 @Service
 public class CartService {
-    
+
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
-    
+
     public CartService(CartRepository cartRepository, ProductRepository productRepository) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
     }
-    
+
     public CartItem addToCart(CartItem cartItem) {
         return cartRepository.save(cartItem);
     }
 
     public CartSummaryDto getCartSummary(Long userId) {
+
         List<CartItem> cartItems = cartRepository.findByUserId(userId);
 
         double totalPrice = 0;
-        double totalCarbon = 0;
+        double totalCarbonUsed = 0;
+        double totalCarbonSaved = 0;
         String ecoSuggestion = null;
 
         for (CartItem item : cartItems) {
+
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
 
+            double carbon = product.getCarbonImpact() * item.getQuantity();
+            totalCarbonUsed += carbon;
             totalPrice += product.getPrice() * item.getQuantity();
-            totalCarbon += product.getCarbonImpact() * item.getQuantity();
 
-            //commit check
-            if (Boolean.FALSE.equals(product.getEcoCertified())) {
+            // ONLY for non-eco products → find eco alternative
+            if (!Boolean.TRUE.equals(product.getEcoCertified())) {
+
                 String[] words = product.getName().split(" ");
-                String keyword = words[words.length - 1].replaceAll("[^a-zA-Z]", ""); 
+                String keyword = words[words.length - 1].replaceAll("[^a-zA-Z]", "");
 
                 Optional<Product> ecoAlt = productRepository
                         .findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(keyword);
 
                 if (ecoAlt.isPresent()) {
-                    double saved = product.getCarbonImpact() - ecoAlt.get().getCarbonImpact();
 
-                    if (saved > 0.5) {
-                        ecoSuggestion = "💡 Switch to " + ecoAlt.get().getName()
-                                + " and save " + String.format("%.2f", saved) + " kg CO₂!";
+                    double ecoCarbon = ecoAlt.get().getCarbonImpact();
+                    double saved = (product.getCarbonImpact() - ecoCarbon) * item.getQuantity();
+
+                    if (saved > 0) {
+                        totalCarbonSaved += saved;
+
+                        // only show suggestion once
+                        if (ecoSuggestion == null) {
+                            ecoSuggestion = "💡 Switch to " + ecoAlt.get().getName()
+                                    + " and save " + String.format("%.2f", saved) + " kg CO₂!";
+                        }
                     }
                 }
             }
         }
 
-        return new CartSummaryDto(cartItems, totalPrice, totalCarbon, ecoSuggestion);
+        return new CartSummaryDto(
+                cartItems,
+                totalPrice,
+                totalCarbonUsed,
+                totalCarbonSaved,
+                ecoSuggestion
+        );
     }
 
     public void removeFromCart(Long id) {

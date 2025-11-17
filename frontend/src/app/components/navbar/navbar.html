@@ -3,8 +3,10 @@
 
     <!-- Left Links -->
     <a routerLink="/" class="hover:underline">Home</a>
-    <a routerLink="/products" class="hover:underline">Products</a>
-    <a routerLink="/cart" class="hover:underline">Cart</a>
+
+    <!-- Visible ONLY for normal users (buyers) -->
+    <a routerLink="/products" *ngIf="!auth.isSeller()" class="hover:underline">Products</a>
+    <a routerLink="/cart" *ngIf="!auth.isSeller()" class="hover:underline">Cart</a>
 
     <div class="flex-1"></div>
 
@@ -17,18 +19,18 @@
     <!-- If LOGGED IN -->
     <ng-container *ngIf="auth.isLoggedIn()">
 
-      <!-- Normal user -->
+      <!-- Normal User -->
       <a routerLink="/dashboard" *ngIf="auth.isUser()" class="hover:underline">
         Dashboard
       </a>
 
-      <!-- Seller -->
+      <!-- Seller Only -->
       <ng-container *ngIf="auth.isSeller()">
         <a routerLink="/seller/dashboard" class="hover:underline">Seller Dashboard</a>
         <a routerLink="/seller/product" class="hover:underline">Add Product</a>
       </ng-container>
 
-      <!-- Admin -->
+      <!-- Admin Only -->
       <ng-container *ngIf="auth.isAdmin()">
         <a routerLink="/admin/dashboard" class="hover:underline">Admin Dashboard</a>
       </ng-container>
