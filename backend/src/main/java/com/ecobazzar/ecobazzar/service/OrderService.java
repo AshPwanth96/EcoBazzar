@@ -55,36 +55,39 @@ public class OrderService {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
-            totalPrice += product.getPrice() * item.getQuantity();
-            totalCarbonUsed += product.getCarbonImpact() * item.getQuantity();
+            double price = product.getPrice() != null ? product.getPrice() : 0.0;
+            double carbon = product.getCarbonImpact() != null ? product.getCarbonImpact() : 0.0;
 
-            // Calculate carbon saved
+            totalPrice += price * item.getQuantity();
+            totalCarbonUsed += carbon * item.getQuantity();
+
             if (!Boolean.TRUE.equals(product.getEcoCertified())) {
 
                 Optional<Product> ecoAlt = productRepository
                         .findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(product.getName());
 
                 if (ecoAlt.isPresent()) {
-                    double ecoCarbon = ecoAlt.get().getCarbonImpact();
-                    double saved = (product.getCarbonImpact() - ecoCarbon) * item.getQuantity();
+                    double ecoCarbon = ecoAlt.get().getCarbonImpact() != null ? ecoAlt.get().getCarbonImpact() : 0.0;
+                    double saved = (carbon - ecoCarbon) * item.getQuantity();
                     if (saved > 0) totalCarbonSaved += saved;
                 }
             }
         }
 
-        // Create the order
+        double totalCarbon = totalCarbonUsed - totalCarbonSaved;
+
         Order order = new Order(
                 null,
                 userId,
                 LocalDate.now(),
                 totalCarbonUsed,
                 totalCarbonSaved,
+                totalCarbon,
                 totalPrice
         );
 
         Order savedOrder = orderRepository.save(order);
 
-        // Save items
         for (CartItem item : cartItems) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(savedOrder.getId());
@@ -93,7 +96,6 @@ public class OrderService {
             orderItemRepository.save(orderItem);
         }
 
-        // Clear cart
         cartRepository.deleteAll(cartItems);
 
         return savedOrder;

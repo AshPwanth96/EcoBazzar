@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
 
                 // ✅ only logged-in USER:
-                .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**").authenticated()
 
                 // ✅ only ADMIN:
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")

@@ -1,5 +1,7 @@
+
 package com.ecobazzar.ecobazzar.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,28 +42,30 @@ public class CartService {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
 
-            double carbon = product.getCarbonImpact() * item.getQuantity();
-            totalCarbonUsed += carbon;
-            totalPrice += product.getPrice() * item.getQuantity();
+   
+            double price = product.getPrice() != null ? product.getPrice() : 0.0;
+            double carbonImpact = product.getCarbonImpact() != null ? product.getCarbonImpact() : 0.0;
 
-            // ONLY for non-eco products → find eco alternative
+            totalPrice += price * item.getQuantity();
+            totalCarbonUsed += carbonImpact * item.getQuantity();
+
+    
             if (!Boolean.TRUE.equals(product.getEcoCertified())) {
 
-                String[] words = product.getName().split(" ");
-                String keyword = words[words.length - 1].replaceAll("[^a-zA-Z]", "");
+      
+                String keyword = product.getName() != null ? product.getName() : "";
+                String[] words = keyword.split("\\s+");
+                String searchTerm = words.length > 0 ? words[words.length - 1].replaceAll("[^a-zA-Z]", "") : keyword;
 
                 Optional<Product> ecoAlt = productRepository
-                        .findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(keyword);
+                        .findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(searchTerm);
 
                 if (ecoAlt.isPresent()) {
-
-                    double ecoCarbon = ecoAlt.get().getCarbonImpact();
-                    double saved = (product.getCarbonImpact() - ecoCarbon) * item.getQuantity();
+                    double ecoCarbon = ecoAlt.get().getCarbonImpact() != null ? ecoAlt.get().getCarbonImpact() : 0.0;
+                    double saved = (carbonImpact - ecoCarbon) * item.getQuantity();
 
                     if (saved > 0) {
                         totalCarbonSaved += saved;
-
-                        // only show suggestion once
                         if (ecoSuggestion == null) {
                             ecoSuggestion = "💡 Switch to " + ecoAlt.get().getName()
                                     + " and save " + String.format("%.2f", saved) + " kg CO₂!";

@@ -17,7 +17,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findBySellerId(@Param("sellerId") Long sellerId);
 
     @Query(value = """
-        SELECT COALESCE(SUM(oi.quantity * p.price), 0)
+        SELECT COALESCE(SUM(oi.quantity * COALESCE(p.price, 0)), 0)
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
         WHERE p.seller_id = :sellerId
@@ -25,10 +25,24 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     Double getTotalRevenueBySeller(@Param("sellerId") Long sellerId);
 
     @Query(value = """
-        SELECT COALESCE(SUM(oi.quantity * p.carbon_impact), 0)
+        SELECT COALESCE(SUM(oi.quantity * COALESCE(p.carbon_impact, 0)), 0)
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
         WHERE p.seller_id = :sellerId
         """, nativeQuery = true)
     Double getTotalCarbonBySeller(@Param("sellerId") Long sellerId);
+    
+    @Query(value = """
+    		  SELECT DATE(o.order_date) AS day,
+    		         COALESCE(SUM(oi.quantity * COALESCE(p.price,0)),0) AS revenue
+    		  FROM order_items oi
+    		  JOIN orders o ON oi.order_id = o.id
+    		  JOIN products p ON oi.product_id = p.id
+    		  WHERE p.seller_id = :sellerId
+    		    AND o.order_date >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
+    		  GROUP BY DATE(o.order_date)
+    		  ORDER BY DATE(o.order_date)
+    		""", nativeQuery = true)
+    		List<Object[]> getDailyRevenueBySeller(@Param("sellerId") Long sellerId, @Param("days") int days);
+
 }
