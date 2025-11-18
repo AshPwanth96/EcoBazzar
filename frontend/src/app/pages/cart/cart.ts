@@ -1,4 +1,3 @@
-// src/app/pages/cart/cart.ts
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { CartService } from '../../services/cart';
