@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,11 +11,14 @@ import { ProductService } from '../../services/product';
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './seller-product.html'
 })
-export class SellerProduct {
+export class SellerProduct implements OnInit {
   private fb = inject(FormBuilder);
   private cloud = inject(CloudinaryService);
   private productSvc = inject(ProductService);
-  public router = inject(Router);   // <-- made public
+  public router = inject(Router);
+
+  editing = false;
+  editingId?: number;
 
   form = this.fb.group({
     name: ['', Validators.required],
@@ -29,6 +32,24 @@ export class SellerProduct {
   previewUrl: string | null = null;
   uploading = false;
   error: string | null = null;
+
+  ngOnInit() {
+    // read product from history.state (set by SellerDashboard.edit)
+    const state: any = history.state;
+    if (state && state.product) {
+      const p = state.product;
+      this.editing = true;
+      this.editingId = p.id;
+      this.form.patchValue({
+        name: p.name || '',
+        details: p.details || '',
+        price: p.price ?? 0,
+        carbonImpact: p.carbonImpact ?? 0,
+        ecoCertified: !!p.ecoRequested
+      });
+      this.previewUrl = p.imageUrl || null;
+    }
+  }
 
   onFileChange(ev: Event) {
     const input = ev.target as HTMLInputElement;
@@ -45,7 +66,7 @@ export class SellerProduct {
     this.uploading = true;
     this.error = null;
 
-    const createPayload = (imageUrl?: string | null) => {
+    const sendPayload = (imageUrl?: string | null) => {
       const payload: any = {
         name: this.form.value.name,
         details: this.form.value.details,
@@ -54,10 +75,15 @@ export class SellerProduct {
         ecoRequested: Boolean(this.form.value.ecoCertified),
         imageUrl: imageUrl || null
       };
-      this.productSvc.create(payload).subscribe({
+
+      const obs = this.editing && this.editingId
+        ? this.productSvc.update(this.editingId, payload)
+        : this.productSvc.create(payload);
+
+      obs.subscribe({
         next: () => {
           this.uploading = false;
-          alert('✅ Product submitted');
+          alert(this.editing ? '✅ Product updated' : '✅ Product submitted');
           this.router.navigate(['/seller/dashboard']);
         },
         error: err => {
@@ -70,11 +96,11 @@ export class SellerProduct {
 
     if (this.selectedFile) {
       this.cloud.uploadFile(this.selectedFile).subscribe({
-        next: (res:any) => createPayload(res?.secure_url || res?.url || null),
+        next: (res:any) => sendPayload(res?.secure_url || res?.url || null),
         error: err => { console.error(err); this.uploading = false; this.error = 'Image upload failed'; }
       });
     } else {
-      createPayload(null);
+      sendPayload(this.previewUrl || null);
     }
   }
 }

@@ -27,7 +27,7 @@ public class ProductService {
     public List<Product> getAllProducts() { return productRepository.findAll(); }
 
     public List<Product> getProductsBySellerId(Long sellerId) {
-        return productRepository.findBySellerId(sellerId);
+        return productRepository.findBySeller_Id(sellerId);  // FIXED
     }
 
     public List<Product> getEcoCertifiedProducts() {
@@ -55,5 +55,9 @@ public class ProductService {
     public void deleteProductDetails(Long id) {
         productRepository.deleteById(id);
     }
+    public Product saveProduct(Product p) {
+        return productRepository.save(p);
+    }
+
 }
 

@@ -41,6 +41,7 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRole("ROLE_SELLER");
+        user.setSellerRequestPending(false); 
         return userRepository.save(user);
     }
 
@@ -82,4 +83,15 @@ public class AdminService {
         }
         return csv.toString();
     }
+    
+    public Product rejectProduct(Long id) {
+        return productRepository.findById(id)
+            .map(p -> {
+                p.setEcoRequested(false);
+                p.setEcoCertified(false);
+                return productRepository.save(p);
+            })
+            .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+    }
+
 }

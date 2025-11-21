@@ -12,7 +12,6 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./navbar.scss'],
 })
 export class Navbar {
-
   constructor(public auth: AuthService, private router: Router) {}
 
   logout() {

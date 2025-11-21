@@ -1,67 +1,128 @@
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-12 px-6">
+  <div class="max-w-7xl mx-auto">
 
-  <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/60 hover:bg-white transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-gray-500 text-sm">Total Products</p>
-        <p class="text-3xl font-bold mt-1">{{ stats.total }}</p>
+    <div class="flex items-center justify-between mb-12">
+      <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-700 to-emerald-600">
+        Seller Dashboard
+      </h1>
+      <button (click)="goAdd()" class="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:shadow-xl transition transform hover:scale-105">
+        + Add New Product
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-20">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+      <p class="mt-4 text-xl text-gray-600">Loading your dashboard...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="text-center py-20">
+      <p class="text-2xl text-red-600 font-bold">{{ error }}</p>
+      <button (click)="load()" class="mt-6 px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700">
+        Try Again
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!loading && !error">
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
+        <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/80 hover:bg-white transition">
+          <p class="text-gray-500 text-sm">Total Products</p>
+          <p class="text-4xl font-bold mt-2">{{ stats.total }}</p>
+        </div>
+        <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/80 hover:bg-white transition">
+          <p class="text-gray-500 text-sm">Eco Certified</p>
+          <p class="text-4xl font-bold mt-2 text-green-600">{{ stats.certified }}</p>
+        </div>
+        <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/80 hover:bg-white transition">
+          <p class="text-gray-500 text-sm">Pending Certification</p>
+          <p class="text-4xl font-bold mt-2 text-orange-600">{{ stats.requested }}</p>
+        </div>
+        <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/80 hover:bg-white transition">
+          <p class="text-gray-500 text-sm">Total Orders</p>
+          <p class="text-4xl font-bold mt-2 text-indigo-600">{{ stats.orders }}</p>
+        </div>
+        <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/80 hover:bg-white transition lg:col-span-1">
+          <p class="text-gray-500 text-sm">Revenue (Lifetime)</p>
+          <p class="text-4xl font-bold mt-2 text-yellow-600">₹{{ stats.revenue | number:'1.0-0' }}</p>
+        </div>
       </div>
-      <div class="text-blue-600 text-4xl" aria-hidden="true">📦</div>
-    </div>
-  </div>
 
-  <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/60 hover:bg-white transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-gray-500 text-sm">Certified</p>
-        <p class="text-3xl font-bold mt-1">{{ stats.certified }}</p>
+      <!-- Badge & Chart -->
+      <div class="grid lg:grid-cols-3 gap-6 mb-10">
+        <div class="lg:col-span-2 p-6 rounded-xl shadow-sm border bg-white/80">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold">Revenue (Last 14 Days)</h3>
+            <span class="text-sm text-gray-500">Daily trend</span>
+          </div>
+
+          <!-- Chart container with explicit height so Chart.js can render responsively -->
+          <div class="w-full" style="height:260px;">
+            <canvas id="salesChart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <div class="p-8 rounded-xl shadow-lg border bg-gradient-to-br from-purple-50 to-indigo-50 text-center">
+          <p class="text-gray-600 text-sm mb-3">Your Seller Badge</p>
+          <p class="text-5xl font-bold text-purple-700">{{ badge }}</p>
+          <p class="text-xs text-gray-500 mt-4">Keep selling eco-friendly products to level up!</p>
+        </div>
       </div>
-      <div class="text-green-600 text-4xl" aria-hidden="true">🌿</div>
-    </div>
-  </div>
 
-  <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/60 hover:bg-white transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-gray-500 text-sm">Orders</p>
-        <p class="text-3xl font-bold mt-1">{{ stats.orders }}</p>
+      <!-- Products List -->
+      <div class="bg-white rounded-2xl shadow-xl border overflow-hidden">
+        <div class="p-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+          <h2 class="text-2xl font-bold">Your Products ({{ products.length }})</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-700">Price</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-700">Status</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let p of products" class="hover:bg-gray-50 transition">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-4">
+                    <img [src]="p.imageUrl || '/assets/placeholder.png'" class="w-16 h-16 object-cover rounded-lg" alt="product">
+                    <div>
+                      <p class="font-medium">{{ p.name }}</p>
+                      <p class="text-sm text-gray-500">ID: {{ p.id }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 font-semibold">₹{{ p.price }}</td>
+                <td class="px-6 py-4">
+                  <span *ngIf="p.ecoCertified" class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Eco Certified
+                  </span>
+                  <span *ngIf="p.ecoRequested && !p.ecoCertified" class="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    Pending Review
+                  </span>
+                  <span *ngIf="!p.ecoRequested && !p.ecoCertified" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    Regular
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <button (click)="edit(p)" class="text-blue-600 hover:underline mr-4">Edit</button>
+                  <button (click)="deleteProduct(p.id)" class="text-red-600 hover:underline">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="products.length === 0" class="text-center py-16 text-gray-500">
+            No products yet. <a routerLink="/seller/product" class="text-green-600 hover:underline font-medium">Add your first product!</a>
+          </div>
+        </div>
       </div>
-      <div class="text-indigo-600 text-4xl" aria-hidden="true">🛒</div>
+
     </div>
   </div>
-
-  <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/60 hover:bg-white transition md:col-span-2">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-gray-500 text-sm">Revenue (Lifetime)</p>
-        <p class="text-3xl font-bold mt-1">₹{{ stats.revenue | number:'1.0-0' }}</p>
-      </div>
-      <div class="text-yellow-500 text-4xl" aria-hidden="true">💰</div>
-    </div>
-    <p class="text-gray-500 text-sm mt-3">
-      Tip: Promote certified products to increase conversions.
-    </p>
-  </div>
-
-  <div class="p-6 rounded-xl shadow-sm border backdrop-blur bg-white/60 hover:bg-white transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-gray-500 text-sm">Badge</p>
-        <p class="text-3xl font-bold mt-1">{{ badge || '—' }}</p>
-      </div>
-      <div class="text-purple-600 text-4xl" aria-hidden="true">🏅</div>
-    </div>
-  </div>
-
-</div>
-
-<div class="p-6 rounded-xl shadow-sm border bg-white/60 mb-6">
-  <div class="flex items-center justify-between mb-3">
-    <div>
-      <p class="text-gray-500 text-sm">Revenue (last 14 days)</p>
-      <p class="text-lg font-semibold">Trend</p>
-    </div>
-    <div class="text-sm text-gray-500">Last 14 days</div>
-  </div>
-  <canvas id="salesChart" height="120"></canvas>
 </div>

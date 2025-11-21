@@ -1,8 +1,38 @@
-<h2 class="text-xl font-bold mb-3">Login</h2>
+<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-4">
+  <div class="w-full max-w-md rounded-3xl bg-white p-10 shadow-2xl">
+    <h2 class="mb-10 text-center text-4xl font-bold text-green-700">EcoBazzar</h2>
 
-<form [formGroup]="loginForm" (ngSubmit)="submit()" class="flex flex-col gap-3 max-w-sm">
-  <input class="border p-2 rounded" placeholder="Email" formControlName="email" />
-  <input class="border p-2 rounded" placeholder="Password" type="password" formControlName="password" />
-  
-  <button class="bg-blue-600 text-white p-2 rounded" type="submit">Login</button>
-</form>
+    <div class="space-y-6">
+      <input 
+        [(ngModel)]="email"
+        [ngModelOptions]="{standalone: true}"
+        type="email"
+        placeholder="Email"
+        required
+        class="w-full rounded-2xl border-2 border-gray-300 px-6 py-4 text-lg focus:border-green-500 focus:outline-none transition"
+      />
+
+      <input 
+        [(ngModel)]="password"
+        [ngModelOptions]="{standalone: true}"
+        type="password"
+        placeholder="Password"
+        required
+        class="w-full rounded-2xl border-2 border-gray-300 px-6 py-4 text-lg focus:border-green-500 focus:outline-none transition"
+      />
+
+      <button 
+        (click)="submit()"
+        [disabled]="isLoggingIn"
+        class="w-full rounded-2xl bg-green-600 py-5 text-xl font-bold text-white hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition shadow-lg">
+        <span *ngIf="!isLoggingIn">Login</span>
+        <span *ngIf="isLoggingIn">Logging in...</span>
+      </button>
+    </div>
+
+    <p class="mt-8 text-center text-gray-600">
+      Don't have an account? 
+      <a routerLink="/register" class="font-bold text-green-600 hover:underline">Register</a>
+    </p>
+  </div>
+</div>

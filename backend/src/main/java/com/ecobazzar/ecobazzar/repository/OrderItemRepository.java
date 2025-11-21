@@ -1,5 +1,6 @@
 package com.ecobazzar.ecobazzar.repository;
 
+import java.sql.Date;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -44,5 +45,19 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     		  ORDER BY DATE(o.order_date)
     		""", nativeQuery = true)
     		List<Object[]> getDailyRevenueBySeller(@Param("sellerId") Long sellerId, @Param("days") int days);
+    		
+    		 @Query(value = """
+    			      SELECT DATE(o.order_date) AS day,
+    			             COALESCE(SUM(oi.quantity * COALESCE(p.price,0)), 0) AS revenue
+    			      FROM order_items oi
+    			      JOIN orders o ON oi.order_id = o.id
+    			      JOIN products p ON oi.product_id = p.id
+    			      WHERE p.seller_id = :sellerId
+    			        AND o.order_date >= :sinceDate
+    			      GROUP BY DATE(o.order_date)
+    			      ORDER BY DATE(o.order_date)
+    			      """, nativeQuery = true)
+    			    List<Object[]> getDailyRevenueBySellerSince(@Param("sellerId") Long sellerId,
+    			                                                @Param("sinceDate") java.sql.Date sinceDate);
 
 }

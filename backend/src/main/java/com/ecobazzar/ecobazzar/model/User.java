@@ -29,6 +29,18 @@ public class User {
 	
 	
 	private Integer ecoScore;
+	
+	private boolean sellerRequestPending = false;
+
+
+	public boolean isSellerRequestPending() {
+		return sellerRequestPending;
+	}
+
+
+	public void setSellerRequestPending(boolean sellerRequestPending) {
+		this.sellerRequestPending = sellerRequestPending;
+	}
 
 
 	public long getId() {
