@@ -1,11 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { CartService } from '../../services/cart';
-import { OrderService } from '../../services/order.service';
-import { ProductService } from '../../services/product';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { ToastrService } from 'ngx-toastr';
+
+import { CartService } from '../../services/cart';
+import { OrderService } from '../../services/order.service';
+import { ProductService } from '../../services/product';
 
 @Component({
   selector: 'app-cart',
@@ -14,16 +16,16 @@ import { catchError } from 'rxjs/operators';
   templateUrl: './cart.html',
 })
 export class Cart implements OnInit {
-
   private cartService = inject(CartService);
   private orderService = inject(OrderService);
   private productService = inject(ProductService);
   private router = inject(Router);
+  private toastr = inject(ToastrService);
 
   items: any[] = [];
   totalPrice = 0;
-  totalCarbon = 0;             // shows total carbon used (kg)
-  totalCarbonSaved = 0;       // optional, if you want to show saved too
+  totalCarbon = 0;
+  totalCarbonSaved = 0;
   ecoSuggestion: string | null = null;
 
   loading = true;
@@ -39,42 +41,35 @@ export class Cart implements OnInit {
 
     this.cartService.getSummary().subscribe({
       next: (res: any) => {
-        // Backend returns totalCarbonUsed / totalCarbonSaved
         this.totalPrice = res.totalPrice ?? 0;
         this.totalCarbon = res.totalCarbonUsed ?? 0;
         this.totalCarbonSaved = res.totalCarbonSaved ?? 0;
         this.ecoSuggestion = res.ecoSuggestion ?? null;
 
         const items = res.items || [];
-        if (!items || items.length === 0) {
+        if (!items.length) {
           this.items = [];
           this.loading = false;
           return;
         }
 
-        // Build array of product fetch observables
         const calls = items.map((item: any) =>
           this.productService.getById(item.productId).pipe(
-            catchError(err => {
-              console.error('Failed to load product', item.productId, err);
-              // return a safe fallback product object so UI still renders
-              return of({
+            catchError(() =>
+              of({
                 id: item.productId,
                 name: item.productName || 'Unknown product',
                 price: item.price || 0,
                 carbonImpact: item.carbonImpact || 0,
                 imageUrl: item.imageUrl || null
-              });
-            })
+              })
+            )
           )
         );
 
-        // Run all product calls in parallel
         (forkJoin(calls) as any).subscribe({
           next: (productsAny: any) => {
             const products: any[] = productsAny as any[];
-
-            // Merge the product data back into cart items in the original order
             this.items = items.map((it: any, idx: number) => {
               const p = products[idx] || {};
               return {
@@ -87,19 +82,19 @@ export class Cart implements OnInit {
             });
             this.loading = false;
           },
-          error: (err: any) => {
-            console.error('Failed to load cart products', err);
+          error: () => {
             this.error = 'Failed to load cart products';
-            this.items = items; // fallback to raw items (minimal)
+            this.items = items;
             this.loading = false;
+            this.toastr.error(this.error);
           }
         });
       },
-      error: (err: any) => {
-        console.error('Failed to load cart summary', err);
-        this.error = "❌ Failed to load cart";
+      error: () => {
+        this.error = 'Failed to load cart';
         this.items = [];
         this.loading = false;
+        this.toastr.error(this.error);
       }
     });
   }
@@ -107,10 +102,12 @@ export class Cart implements OnInit {
   remove(id: number) {
     if (!confirm('Remove this item?')) return;
     this.cartService.remove(id).subscribe({
-      next: () => this.loadCart(),
-      error: (err: any) => {
-        console.error('Remove failed', err);
-        alert('❌ Remove failed');
+      next: () => {
+        this.toastr.success('Item removed from cart');
+        this.loadCart();
+      },
+      error: () => {
+        this.toastr.error('Remove failed');
       }
     });
   }
@@ -118,14 +115,17 @@ export class Cart implements OnInit {
   checkout() {
     this.orderService.checkout().subscribe({
       next: () => {
-        alert('✅ Order placed successfully!');
+        this.toastr.success('Order placed successfully');
         this.router.navigate(['/dashboard']);
       },
       error: (err: any) => {
-        console.error('Checkout error full:', err);
         const status = err?.status ?? 'unknown';
-        const serverBody = (err?.error && typeof err.error !== 'string') ? JSON.stringify(err.error) : (err?.error || err?.message || 'No message');
-        alert(`❌ Checkout failed (status: ${status})\nServer response: ${serverBody}`);
+        const serverMsg =
+          (typeof err?.error === 'string' && err.error) ||
+          err?.error?.message ||
+          err?.message ||
+          'Checkout failed';
+        this.toastr.error(`${serverMsg} (status: ${status})`);
       }
     });
   }

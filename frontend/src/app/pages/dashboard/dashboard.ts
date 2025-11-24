@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { UserReportService } from '../../services/user-report';
 import { catchError, finalize, of } from 'rxjs';
 import Chart from 'chart.js/auto';
+import { ToastrService } from 'ngx-toastr';
 
 export interface UserReport {
   userId: number;
@@ -23,9 +24,10 @@ export interface UserReport {
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],
 })
-export class Dashboard implements OnInit {
+export class Dashboard implements OnInit, OnDestroy {
   private reportSvc = inject(UserReportService);
   private http = inject(HttpClient);
+  private toastr = inject(ToastrService);
 
   name = localStorage.getItem('name') ?? 'User';
   role = localStorage.getItem('role')?.replace('ROLE_', '') ?? 'GUEST';
@@ -44,13 +46,33 @@ export class Dashboard implements OnInit {
 
   chartSaved!: Chart;
   chartUsed!: Chart;
+  isDark = false;
+
+  private themeObserver: MutationObserver | null = null;
 
   ngOnInit(): void {
     this.loadReport();
+
+    this.isDark = document.documentElement.classList.contains('dark');
+    this.themeObserver = new MutationObserver(() => {
+      const dark = document.documentElement.classList.contains('dark');
+      if (dark !== this.isDark) {
+        this.isDark = dark;
+        this.updateChartTheme();
+      }
+    });
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     if (this.role === 'USER') {
       this.checkPendingAdminRequest();
       this.checkPendingSellerRequest();
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.chartSaved) this.chartSaved.destroy();
+    if (this.chartUsed) this.chartUsed.destroy();
+    this.themeObserver?.disconnect();
   }
 
   loadReport() {
@@ -60,6 +82,7 @@ export class Dashboard implements OnInit {
         catchError(err => {
           console.error(err);
           this.error = 'Failed to load eco report';
+          this.toastr.error(this.error);
           return of(null);
         }),
         finalize(() => this.loading = false)
@@ -95,10 +118,12 @@ export class Dashboard implements OnInit {
         this.hasPendingRequest = true;
         this.requestSuccess = true;
         this.requesting = false;
+        this.toastr.success('Admin request sent. Await approval.');
       },
       error: (err) => {
         this.requesting = false;
-        alert(err.error?.message || 'Failed to send request. Try again.');
+        const msg = err?.error?.message || 'Failed to send admin request. Try again.';
+        this.toastr.error(msg);
       }
     });
   }
@@ -122,10 +147,12 @@ export class Dashboard implements OnInit {
         this.hasPendingSellerRequest = true;
         this.sellerRequestSuccess = true;
         this.sellerRequesting = false;
+        this.toastr.success('Seller request sent. Await approval.');
       },
       error: (err) => {
         this.sellerRequesting = false;
-        alert(err.error || 'Failed to send seller request. Try again.');
+        const msg = err?.error?.message || err?.error || 'Failed to send seller request. Try again.';
+        this.toastr.error(msg);
       }
     });
   }
@@ -136,8 +163,22 @@ export class Dashboard implements OnInit {
 
     const savedCtx = document.getElementById('savedChart') as HTMLCanvasElement;
     const usedCtx = document.getElementById('usedChart') as HTMLCanvasElement;
-
     if (!savedCtx || !usedCtx || !this.report) return;
+
+    const textColor = this.isDark ? '#d1d5db' : '#374151';
+    const gridColor = this.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+    const commonOptions: any = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor }, grid: { color: gridColor } }
+      },
+      plugins: {
+        legend: { labels: { color: textColor } }
+      }
+    };
 
     const savedData = this.report.totalCarbonSaved > 0
       ? [12, 18, 25, 22, 35, 40, 30]
@@ -150,13 +191,13 @@ export class Dashboard implements OnInit {
         datasets: [{
           label: 'Carbon Saved (kg)',
           data: savedData,
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.25)',
+          borderColor: this.isDark ? '#34d399' : '#059669',
+          backgroundColor: this.isDark ? '#34d39966' : '#10b98133',
           tension: 0.4,
-          fill: true,
+          fill: true
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: commonOptions
     });
 
     const usedWeeklyData = [120, 160, 190, 170, 220, 260, 200];
@@ -168,21 +209,47 @@ export class Dashboard implements OnInit {
         datasets: [{
           label: 'Carbon Used (kg)',
           data: usedWeeklyData,
-          borderColor: '#ef4444',
-          backgroundColor: 'rgba(239,68,68,0.25)',
+          borderColor: this.isDark ? '#f87171' : '#dc2626',
+          backgroundColor: this.isDark ? '#ef444466' : '#dc262633',
           tension: 0.4,
-          fill: true,
+          fill: true
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: commonOptions
+    });
+  }
+
+  updateChartTheme() {
+    const textColor = this.isDark ? '#d1d5db' : '#374151';
+    const gridColor = this.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+    [this.chartSaved, this.chartUsed].forEach((chart) => {
+      if (!chart) return;
+
+      if (chart.options.scales?.['x']?.ticks) chart.options.scales['x'].ticks.color = textColor;
+      if (chart.options.scales?.['x']?.grid) chart.options.scales['x'].grid.color = gridColor;
+      if (chart.options.scales?.['y']?.ticks) chart.options.scales['y'].ticks.color = textColor;
+      if (chart.options.scales?.['y']?.grid) chart.options.scales['y'].grid.color = gridColor;
+      if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = textColor;
+
+      chart.data.datasets.forEach((ds: any) => {
+        if (ds.label?.includes('Saved')) {
+          ds.borderColor = this.isDark ? '#34d399' : '#059669';
+          ds.backgroundColor = this.isDark ? '#34d39966' : '#10b98133';
+        } else {
+          ds.borderColor = this.isDark ? '#f87171' : '#dc2626';
+          ds.backgroundColor = this.isDark ? '#ef444466' : '#dc262633';
+        }
+      });
+
+      chart.update();
     });
   }
 
   getBadgeColor(): string {
-    if (!this.report || this.report.totalCarbonSaved <= 0)
-      return 'from-gray-600 to-gray-500';
+    if (!this.report || this.report.totalCarbonSaved <= 0) return 'from-gray-600 to-gray-500';
 
-    const badge = this.report.ecoBadge;
+    const badge = this.report.ecoBadge || '';
     if (badge.includes('Eco Legend')) return 'from-yellow-500 to-amber-500';
     if (badge.includes('Green Hero')) return 'from-green-600 to-green-500';
     if (badge.includes('Conscious Shopper')) return 'from-blue-600 to-blue-500';

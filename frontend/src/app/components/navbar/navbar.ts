@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NgIf } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-navbar',
@@ -11,10 +12,25 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './navbar.html',
   styleUrls: ['./navbar.scss'],
 })
-export class Navbar {
-  constructor(public auth: AuthService, private router: Router) {}
+export class Navbar implements OnInit {
+  isDark = false;
 
-  logout() {
+  constructor(
+    public auth: AuthService,
+    private router: Router,
+    private theme: ThemeService
+  ) {}
+
+  ngOnInit(): void {
+    this.isDark = this.theme.isDarkMode();
+  }
+
+  toggleTheme(): void {
+    this.theme.toggleTheme();
+    this.isDark = this.theme.isDarkMode();
+  }
+
+  logout(): void {
     this.auth.logout();
     this.router.navigate(['/']);
   }

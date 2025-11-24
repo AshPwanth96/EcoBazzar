@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 
 interface PlatformReport {
   totalOrders: number;
@@ -46,6 +47,7 @@ interface PendingAdminRequest {
 export class Admin implements OnInit {
   private http = inject(HttpClient);
   private datePipe = inject(DatePipe);
+  private toastr = inject(ToastrService);
 
   report: PlatformReport | null = null;
   pendingProducts: PendingProduct[] = [];
@@ -53,7 +55,8 @@ export class Admin implements OnInit {
   pendingAdminRequests: PendingAdminRequest[] = [];
 
   loading = true;
-  processing = new Set<number>(); // Prevents double clicks
+  processing = new Set<number>();
+  isDownloading = false;
 
   get today(): string {
     return this.datePipe.transform(new Date(), 'mediumDate') || '';
@@ -67,35 +70,35 @@ export class Admin implements OnInit {
     this.loading = true;
 
     this.http.get<PlatformReport>('/api/admin/reports').subscribe({
-      next: (r) => this.report = r,
-      error: () => this.showToast('Failed to load stats', 'error')
+      next: (r) => (this.report = r),
+      error: () => this.toastr.error('Failed to load stats')
     });
 
     this.loadPendingProducts();
     this.loadPendingSellers();
     this.loadPendingAdminRequests();
 
-    setTimeout(() => this.loading = false, 600);
+    setTimeout(() => (this.loading = false), 600);
   }
 
   private loadPendingProducts(): void {
     this.http.get<PendingProduct[]>('/api/admin/pending-products').subscribe({
-      next: (d) => this.pendingProducts = d,
-      error: () => this.showToast('Failed to load products', 'error')
+      next: (d) => (this.pendingProducts = d),
+      error: () => this.toastr.error('Failed to load products')
     });
   }
 
   private loadPendingSellers(): void {
     this.http.get<PendingSeller[]>('/api/admin/pending-sellers').subscribe({
-      next: (d) => this.pendingSellers = d,
-      error: () => this.showToast('Failed to load sellers', 'error')
+      next: (d) => (this.pendingSellers = d),
+      error: () => this.toastr.error('Failed to load sellers')
     });
   }
 
   private loadPendingAdminRequests(): void {
     this.http.get<PendingAdminRequest[]>('/api/admin-request/pending').subscribe({
-      next: (d) => this.pendingAdminRequests = d,
-      error: () => this.showToast('Failed to load admin requests', 'error')
+      next: (d) => (this.pendingAdminRequests = d),
+      error: () => this.toastr.error('Failed to load admin requests')
     });
   }
 
@@ -105,10 +108,10 @@ export class Admin implements OnInit {
 
     this.http.put(`/api/admin/approveProduct/${id}`, {}).subscribe({
       next: () => {
-        this.showToast('Eco Product Certified!');
+        this.toastr.success('Eco Product Certified');
         this.loadAllData();
       },
-      error: () => this.showToast('Failed', 'error'),
+      error: () => this.toastr.error('Failed'),
       complete: () => this.processing.delete(id)
     });
   }
@@ -120,10 +123,10 @@ export class Admin implements OnInit {
     this.processing.add(id);
     this.http.put(`/api/admin/rejectProduct/${id}`, {}).subscribe({
       next: () => {
-        this.showToast('Product request rejected', 'success');
+        this.toastr.success('Product request rejected');
         this.loadAllData();
       },
-      error: () => this.showToast('Failed to reject', 'error'),
+      error: () => this.toastr.error('Failed to reject'),
       complete: () => this.processing.delete(id)
     });
   }
@@ -134,10 +137,10 @@ export class Admin implements OnInit {
 
     this.http.put(`/api/admin/approveSeller/${id}`, {}).subscribe({
       next: () => {
-        this.showToast('Seller Approved!');
+        this.toastr.success('Seller Approved');
         this.loadAllData();
       },
-      error: () => this.showToast('Failed', 'error'),
+      error: () => this.toastr.error('Failed'),
       complete: () => this.processing.delete(id)
     });
   }
@@ -148,10 +151,10 @@ export class Admin implements OnInit {
 
     this.http.post(`/api/admin-request/approve/${id}`, {}).subscribe({
       next: () => {
-        this.showToast('New Admin Added!');
+        this.toastr.success('New Admin Added');
         this.loadAllData();
       },
-      error: () => this.showToast('Failed', 'error'),
+      error: () => this.toastr.error('Failed'),
       complete: () => this.processing.delete(id)
     });
   }
@@ -162,51 +165,45 @@ export class Admin implements OnInit {
 
     this.http.post(`/api/admin-request/reject/${id}`, {}).subscribe({
       next: () => {
-        this.showToast('Request Rejected');
+        this.toastr.success('Request Rejected');
         this.loadAllData();
       },
-      error: () => this.showToast('Failed', 'error'),
+      error: () => this.toastr.error('Failed'),
       complete: () => this.processing.delete(id)
     });
   }
 
   downloadCsv(): void {
-    const token = localStorage.getItem('token'); // or get from your AuthService
+    const token = localStorage.getItem('token');
     if (!token) {
-      this.showToast('Not authenticated', 'error');
+      this.toastr.error('Not authenticated');
       return;
     }
+    if (this.isDownloading) return;
 
-    this.http.get('/api/admin/reports/export', {
-      responseType: 'blob',
-      headers: { Authorization: `Bearer ${token}` }
-    }).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'orders-report.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        this.showToast('CSV downloaded');
-      },
-      error: (err) => {
-        console.error('CSV download failed', err);
-        this.showToast('Download failed', 'error');
-      }
-    });
-  }
-
-  showToast(message: string, type: 'success' | 'error' = 'success'): void {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.className = `fixed bottom-8 right-8 px-8 py-5 rounded-2xl shadow-2xl text-white font-bold text-lg z-50 transition-all duration-500
-      ${type === 'success' ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-red-600 to-rose-600'}`;
-
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('translate-y-16', 'opacity-0'), 2500);
-    setTimeout(() => toast.remove(), 3000);
+    this.isDownloading = true;
+    this.http
+      .get('/api/admin/reports/export', {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'orders-report.csv';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          this.toastr.success('CSV downloaded');
+          this.isDownloading = false;
+        },
+        error: () => {
+          this.toastr.error('Download failed');
+          this.isDownloading = false;
+        }
+      });
   }
 }

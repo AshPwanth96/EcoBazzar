@@ -1,11 +1,13 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductService } from '../../services/product';
-import { ReportService } from '../../services/report.service';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
+import { ToastrService } from 'ngx-toastr';
+
+import { ProductService } from '../../services/product';
+import { ReportService } from '../../services/report.service';
 
 Chart.register(...registerables);
 
@@ -19,6 +21,7 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
   private productSvc = inject(ProductService);
   private reportSvc = inject(ReportService);
   private router = inject(Router);
+  private toastr = inject(ToastrService);
 
   products: any[] = [];
   loading = true;
@@ -40,7 +43,7 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // nothing here - chart is created after data arrives in load()
+    // chart is created after data arrives in load()
   }
 
   ngOnDestroy(): void {
@@ -57,11 +60,6 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
 
     forkJoin([products$, report$, sales$]).subscribe({
       next: ([productsRes, reportRes, salesRes]: any) => {
-        // debug prints help while developing — remove later if noisy
-        // console.log('seller products', productsRes);
-        // console.log('seller report', reportRes);
-        // console.log('seller sales raw', salesRes);
-
         this.products = productsRes || [];
         this.stats.total = this.products.length;
         this.stats.certified = this.products.filter((p: any) => p.ecoCertified).length;
@@ -69,10 +67,8 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
 
         this.stats.orders = Number(reportRes?.totalOrders ?? 0);
         this.stats.revenue = Number(reportRes?.totalRevenue ?? 0);
-        // keep backward-compatible badge key if backend uses different name
         this.badge = reportRes?.ecoSellerBadge ?? reportRes?.badge ?? 'New Seller';
 
-        // Render chart with robust handler (handles empty, single point, string numbers etc.)
         this.renderChart(salesRes || []);
         this.loading = false;
       },
@@ -85,18 +81,12 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   renderChart(data: any[]) {
-    // guard
     const canvas = document.getElementById('salesChart') as HTMLCanvasElement | null;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // ensure array
     const rows = Array.isArray(data) ? data : [];
-
-    // Defensive: normalize rows into day/revenue pairs.
-    // Backend shape examples we accept: { day: 'YYYY-MM-DD', revenue: 150 } or { date: '...', value: ... }
     const normalized = rows.map((r: any) => {
       const day = r.day ?? r.date ?? r.label ?? '';
       const v = r.revenue ?? r.value ?? r.amount ?? 0;
@@ -109,7 +99,6 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.chart) this.chart.destroy();
 
-    // If only a single point, make it visible (bigger point, optional vertical padding)
     const pointRadius = values.length === 1 ? 6 : 4;
     const suggestedMax = Math.max(...values, 0) * 1.15 || undefined;
 
@@ -166,27 +155,20 @@ export class SellerDashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteProduct(id: number) {
+    // Optional: replace confirm() with a prettier modal later; for now keep native confirm.
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     this.productSvc.delete(id).subscribe({
       next: () => {
         this.products = this.products.filter(p => p.id !== id);
-        this.stats.total--;
-        this.showToast('Product deleted successfully');
-        this.load(); // Refresh stats and chart
+        this.stats.total = this.products.length;
+        this.toastr.success('Product deleted successfully');
+        this.load(); // refresh counts and chart
       },
-      error: () => this.showToast('Failed to delete product', 'error')
+      error: (err) => {
+        const msg = err?.error?.message || err?.message || 'Failed to delete product';
+        this.toastr.error(msg);
+      }
     });
-  }
-
-  showToast(message: string, type: 'success' | 'error' = 'success') {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.className = `fixed bottom-8 right-8 px-8 py-4 rounded-xl shadow-2xl text-white font-bold z-50 transition-all ${
-      type === 'success' ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-red-600'
-    }`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('opacity-0'), 2500);
-    setTimeout(() => toast.remove(), 3000);
   }
 }

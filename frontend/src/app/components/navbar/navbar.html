@@ -1,6 +1,6 @@
-<mat-toolbar class="px-6 py-4 bg-green-700 text-white shadow-xl">
+<mat-toolbar class="px-6 py-4 bg-green-700 text-white shadow-xl dark:bg-[--color-moss-500]">
   <div class="flex items-center justify-between w-full max-w-7xl mx-auto">
-
+    <!-- Left -->
     <div class="flex items-center gap-8">
       <a routerLink="/" class="text-2xl font-bold tracking-tight hover:opacity-90 transition">
         EcoBazzar
@@ -19,7 +19,20 @@
       </a>
     </div>
 
+    <!-- Right -->
     <div class="flex items-center gap-6">
+      <!-- Theme toggle -->
+      <button
+        type="button"
+        (click)="toggleTheme()"
+        [attr.aria-pressed]="isDark"
+        class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5
+               border-white/20 bg-white/10 backdrop-blur text-white hover:bg-white/20
+               dark:border-white/20 dark:bg-black/20 dark:hover:bg-black/30 transition">
+        <span class="material-icons hidden dark:inline">light_mode</span>
+        <span class="material-icons inline dark:hidden">dark_mode</span>
+        <span class="text-sm hidden sm:inline">{{ isDark ? 'Light' : 'Dark' }}</span>
+      </button>
 
       <ng-container *ngIf="!auth.isLoggedIn()">
         <a routerLink="/login" class="text-lg font-medium hover:opacity-80 transition">Login</a>
@@ -27,7 +40,6 @@
       </ng-container>
 
       <ng-container *ngIf="auth.isLoggedIn()">
-
         <a routerLink="/dashboard"
            *ngIf="auth.isUser()"
            class="text-lg font-medium hover:opacity-80 transition">
@@ -51,12 +63,10 @@
 
         <span class="text-lg font-semibold">Hi, {{ auth.getName() }}</span>
 
-        <button (click)="logout()"
-                class="text-lg font-medium underline-offset-4 hover:underline transition">
+        <button (click)="logout()" class="text-lg font-medium underline-offset-4 hover:underline transition">
           Logout
         </button>
       </ng-container>
-
     </div>
   </div>
 </mat-toolbar>

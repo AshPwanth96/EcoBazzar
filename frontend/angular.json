@@ -27,7 +27,10 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              "node_modules/ngx-toastr/toastr.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -84,7 +87,10 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              "node_modules/ngx-toastr/toastr.css"
+            ]
           }
         }
       }
