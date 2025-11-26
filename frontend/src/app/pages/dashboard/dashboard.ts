@@ -1,4 +1,3 @@
-// src/app/pages/dashboard/dashboard.ts
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, inject, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -254,18 +253,25 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  requestAdminAccess() {
-    this.requesting = true;
-    this.http.post('/api/admin-request/request', {}).subscribe({
-      next: () => {
-        this.requestSuccess = true;
+requestAdminAccess() {
+  this.requesting = true;
+  this.http.post('/api/admin-request/request', {}).subscribe({
+    next: () => {
+      this.requestSuccess = true;
+      this.hasPendingRequest = true;
+      this.toastr.success('Admin request sent!');
+    },
+    error: (err: any) => {
+      if (err.status === 409) {
         this.hasPendingRequest = true;
-        this.toastr.success('Admin request sent!');
-      },
-      error: () => this.toastr.error('Request failed'),
-      complete: () => this.requesting = false
-    });
-  }
+        this.toastr.info(err.error?.message || 'You already have a pending admin request');
+      } else if (err.status !== 401 && err.status !== 403) {
+        this.toastr.error('Request failed. Please try again.');
+      }
+    },
+    complete: () => this.requesting = false
+  });
+}
 
   checkPendingSellerRequest() {
     this.http.get<boolean>('/api/admin-request/has-pending').subscribe({
@@ -274,16 +280,25 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  requestSellerAccess() {
-    this.sellerRequesting = true;
-    this.http.post('/api/admin-request/request', {}).subscribe({
-      next: () => {
-        this.sellerRequestSuccess = true;
+ 
+
+requestSellerAccess() {
+  this.sellerRequesting = true;
+  this.http.post('/api/seller-request/request', {}).subscribe({
+    next: () => {
+      this.sellerRequestSuccess = true;
+      this.hasPendingSellerRequest = true;
+      this.toastr.success('Seller request sent!');
+    },
+    error: (err) => {
+      if (err.status === 400) {
         this.hasPendingSellerRequest = true;
-        this.toastr.success('Seller request sent!');
-      },
-      error: () => this.toastr.error('Request failed'),
-      complete: () => this.sellerRequesting = false
-    });
-  }
+        this.toastr.info(err.error?.message || 'Request already pending');
+      } else {
+        this.toastr.error('Request failed');
+      }
+    },
+    complete: () => this.sellerRequesting = false
+  });
+}
 }

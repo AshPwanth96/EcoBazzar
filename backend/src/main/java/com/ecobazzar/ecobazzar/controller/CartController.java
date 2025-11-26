@@ -5,6 +5,11 @@ import com.ecobazzar.ecobazzar.model.CartItem;
 import com.ecobazzar.ecobazzar.model.User;
 import com.ecobazzar.ecobazzar.repository.UserRepository;
 import com.ecobazzar.ecobazzar.service.CartService;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -40,11 +45,23 @@ public class CartController {
 
     @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/{id}")
-    public String removeFromCart(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> removeFromCart(@PathVariable Long id, Authentication auth) {
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        cartService.removeFromCart(id, user.getId());
-        return "Item removed from cart";
+
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            cartService.removeFromCart(id, user.getId());
+            response.put("message", "Item removed from cart");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found") || e.getMessage().contains("Unauthorized")) {
+                response.put("message", "Item not found or already removed");
+                return ResponseEntity.status(404).body(response);  // 404 instead of 500
+            }
+            throw e;
+        }
     }
 
     @PreAuthorize("hasRole('USER')")

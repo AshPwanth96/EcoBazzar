@@ -1,9 +1,7 @@
 package com.ecobazzar.ecobazzar.config;
 
 import com.ecobazzar.ecobazzar.security.JwtFilter;
-
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,53 +30,53 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-      http
-        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
-          // Auth endpoints
-          .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
 
-          // Swagger
-          .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // PUBLIC ENDPOINTS
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
 
-          // Public product browsing
-          .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+                // USER-ONLY ENDPOINTS
+                .requestMatchers("/api/reports/user/**").hasRole("USER")
 
-          // Reports (USER only)
-          .requestMatchers("/api/reports/user/**").hasRole("USER")
+                // ADMIN REQUEST ENDPOINTS — ONLY LOGGED-IN USERS CAN CALL (token required!)
+                .requestMatchers("/api/admin-request/request").authenticated()
+                .requestMatchers("/api/admin-request/has-pending").authenticated()
 
-          // Seller endpoints
-          .requestMatchers(HttpMethod.GET, "/api/products/seller").hasAnyRole("SELLER", "ADMIN")
-          .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("SELLER", "ADMIN")
-          .requestMatchers(HttpMethod.PUT,  "/api/products/**").hasAnyRole("SELLER", "ADMIN")
-          .requestMatchers(HttpMethod.DELETE,"/api/products/**").hasAnyRole("SELLER", "ADMIN")
+                // SELLER ENDPOINTS
+                .requestMatchers("/api/products/seller").hasAnyRole("SELLER", "ADMIN")
+                .requestMatchers("/api/products/**").hasAnyRole("SELLER", "ADMIN")
 
-          // Admin endpoints
-          .requestMatchers("/api/admin/**").hasRole("ADMIN")
-          .requestMatchers("/api/admin-request/pending").hasRole("ADMIN")
-          .requestMatchers("/api/admin-request/approve/**").hasRole("ADMIN")
-          .requestMatchers("/api/admin-request/reject/**").hasRole("ADMIN")
+                // ADMIN-ONLY ENDPOINTS
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin-request/pending", 
+                                 "/api/admin-request/approve/**", 
+                                 "/api/admin-request/reject/**").hasRole("ADMIN")
 
-          // Eco-certification requests (any logged-in user)
-          .requestMatchers("/api/admin-request/request").authenticated()
-          .requestMatchers("/api/admin-request/has-pending").authenticated()
+                // EVERYTHING ELSE REQUIRES AUTHENTICATION
+                .anyRequest().authenticated()
+            )
+            // CLEAN, PREDICTABLE 401/403 RESPONSES
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, authException) -> {
+                    res.setContentType("application/json");
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Valid token required\"}");
+                })
+                .accessDeniedHandler((req, res, accessDeniedException) -> {
+                    res.setContentType("application/json");
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Insufficient permissions\"}");
+                })
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-          // Everything else must be authenticated
-          .anyRequest().authenticated()
-        )
-        .exceptionHandling(ex -> ex
-          // 401 for missing/invalid token
-          .authenticationEntryPoint((req, res, e) ->
-              res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
-          // 403 for logged-in but insufficient role
-          .accessDeniedHandler((req, res, e) ->
-              res.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
-        )
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-      return http.build();
+        return http.build();
     }
 
     @Bean
@@ -89,7 +87,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:4200"));
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

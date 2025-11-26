@@ -1,7 +1,6 @@
 package com.ecobazzar.ecobazzar.controller;
 
 import com.ecobazzar.ecobazzar.dto.PendingAdminRequestDto;
-import com.ecobazzar.ecobazzar.model.AdminRequest;
 import com.ecobazzar.ecobazzar.model.User;
 import com.ecobazzar.ecobazzar.repository.UserRepository;
 import com.ecobazzar.ecobazzar.service.AdminRequestService;
@@ -26,21 +25,27 @@ public class AdminRequestController {
         this.userRepository = userRepository;
     }
 
-    // Any logged-in user can request to become admin
     @PostMapping("/request")
     public ResponseEntity<Map<String, String>> requestAccess(Authentication auth) {
-        String email = auth.getName(); // JWT subject = email
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        service.requestAdminAccess(user.getId());
-
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Admin access requested successfully");
-        return ResponseEntity.ok(response);
+        try {
+            service.requestAdminAccess(user.getId());
+            response.put("message", "Admin access requested successfully");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg.contains("already an admin") || msg.contains("pending admin request")) {
+                response.put("message", msg);
+                return ResponseEntity.status(409).body(response);
+            }
+            throw e;
+        }
     }
 
-    // Only admins can see pending requests
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/pending")
     public List<PendingAdminRequestDto> getPending() {
@@ -54,27 +59,25 @@ public class AdminRequestController {
             ))
             .toList();
     }
-    // Approve → make user admin
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/approve/{id}")
     public ResponseEntity<Map<String, String>> approve(@PathVariable Long id) {
         service.approveRequest(id);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "User promoted to Admin successfully");
-        return ResponseEntity.ok(response);
+        Map<String, String> res = new HashMap<>();
+        res.put("message", "User promoted to Admin successfully");
+        return ResponseEntity.ok(res);
     }
 
-    // Reject request
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/reject/{id}")
     public ResponseEntity<Map<String, String>> reject(@PathVariable Long id) {
         service.rejectRequest(id);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Admin request rejected");
-        return ResponseEntity.ok(response);
+        Map<String, String> res = new HashMap<>();
+        res.put("message", "Admin request rejected");
+        return ResponseEntity.ok(res);
     }
 
-    // Badge indicator — any logged-in user can call this
     @GetMapping("/has-pending")
     public boolean hasPending() {
         return service.hasPendingRequests();

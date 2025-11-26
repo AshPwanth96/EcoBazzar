@@ -1,12 +1,14 @@
-
 package com.ecobazzar.ecobazzar.controller;
 
+import com.ecobazzar.ecobazzar.model.User;
+import com.ecobazzar.ecobazzar.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.ecobazzar.ecobazzar.model.User;
-import com.ecobazzar.ecobazzar.repository.UserRepository;
+
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/seller-request")
@@ -20,21 +22,26 @@ public class SellerRequestController {
 
     @PostMapping("/request")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<String> requestSellerRole(Authentication auth) {
+    public ResponseEntity<Map<String, String>> requestSellerRole(Authentication auth) {
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        Map<String, String> response = new HashMap<>();
+
         if ("ROLE_SELLER".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body("You are already a seller");
+            response.put("message", "You are already a seller");
+            return ResponseEntity.badRequest().body(response);
         }
         if (user.isSellerRequestPending()) {
-            return ResponseEntity.badRequest().body("Request already pending");
+            response.put("message", "Request already pending");
+            return ResponseEntity.badRequest().body(response);
         }
 
         user.setSellerRequestPending(true);
         userRepository.save(user);
 
-        return ResponseEntity.ok("Seller request sent successfully");
+        response.put("message", "Seller request sent successfully");
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/has-pending")
