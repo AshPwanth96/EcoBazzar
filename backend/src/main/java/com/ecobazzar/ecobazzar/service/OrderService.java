@@ -1,6 +1,8 @@
 package com.ecobazzar.ecobazzar.service;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,12 +27,10 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
-    public OrderService(
-            CartRepository cartRepository,
-            ProductRepository productRepository,
-            OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository) {
-
+    public OrderService(CartRepository cartRepository,
+                        ProductRepository productRepository,
+                        OrderRepository orderRepository,
+                        OrderItemRepository orderItemRepository) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -39,19 +39,17 @@ public class OrderService {
 
     @Transactional
     public Order checkout(Long userId) {
-
         List<CartItem> cartItems = cartRepository.findByUserId(userId);
 
         if (cartItems.isEmpty()) {
             throw new RuntimeException("Cart is Empty! Cannot Checkout");
         }
 
-        double totalPrice = 0;
-        double totalCarbonUsed = 0;
-        double totalCarbonSaved = 0;
+        double totalPrice = 0.0;
+        double totalCarbonUsed = 0.0;
+        double totalCarbonSaved = 0.0;
 
         for (CartItem item : cartItems) {
-
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -61,31 +59,40 @@ public class OrderService {
             totalPrice += price * item.getQuantity();
             totalCarbonUsed += carbon * item.getQuantity();
 
-            if (!Boolean.TRUE.equals(product.getEcoCertified())) {
+            // ONLY award savings when user bought an ECO-CERTIFIED product
+            if (Boolean.TRUE.equals(product.getEcoCertified())) {
+                List<Product> nonEcoCandidates = productRepository.findByEcoCertifiedFalse();
 
-                Optional<Product> ecoAlt = productRepository
-                        .findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(product.getName());
+                Optional<Product> matchedConventional = nonEcoCandidates.stream()
+                    .filter(p -> {
+                        String ecoKey = extractKeyword(product.getName());
+                        String nonEcoKey = extractKeyword(p.getName());
+                        String ecoName = product.getName().toLowerCase();
+                        String nonEcoName = p.getName().toLowerCase();
 
-                if (ecoAlt.isPresent()) {
-                    double ecoCarbon = ecoAlt.get().getCarbonImpact() != null ? ecoAlt.get().getCarbonImpact() : 0.0;
-                    double saved = (carbon - ecoCarbon) * item.getQuantity();
-                    if (saved > 0) totalCarbonSaved += saved;
+                        return ecoKey.equals(nonEcoKey) ||
+                               ecoName.contains(nonEcoKey) ||
+                               nonEcoName.contains(ecoKey);
+                    })
+                    .min(Comparator.comparingDouble(p -> {
+                        double otherCarbon = p.getCarbonImpact() != null ? p.getCarbonImpact() : 0.0;
+                        return Math.abs(otherCarbon - carbon);
+                    }));
+
+                if (matchedConventional.isPresent()) {
+                    double conventionalCarbon = matchedConventional.get().getCarbonImpact() != null
+                            ? matchedConventional.get().getCarbonImpact() : carbon;
+                    double savedPerUnit = conventionalCarbon - carbon;
+                    if (savedPerUnit > 0) {
+                        totalCarbonSaved += savedPerUnit * item.getQuantity();
+                    }
                 }
             }
         }
 
-        double totalCarbon = totalCarbonUsed - totalCarbonSaved;
+        double netCarbon = totalCarbonUsed - totalCarbonSaved;
 
-        Order order = new Order(
-                null,
-                userId,
-                LocalDate.now(),
-                totalCarbonUsed,
-                totalCarbonSaved,
-                totalCarbon,
-                totalPrice
-        );
-
+        Order order = new Order(null, userId, LocalDate.now(), totalCarbonUsed, totalCarbonSaved, netCarbon, totalPrice);
         Order savedOrder = orderRepository.save(order);
 
         for (CartItem item : cartItems) {
@@ -97,11 +104,26 @@ public class OrderService {
         }
 
         cartRepository.deleteAll(cartItems);
-
         return savedOrder;
     }
 
+    // THIS WAS MISSING — NOW ADDED
     public List<Order> getOrdersByUserId(Long userId) {
         return orderRepository.findByUserId(userId);
+    }
+
+    private String extractKeyword(String name) {
+        if (name == null || name.isBlank()) return "product";
+
+        String cleaned = name.toLowerCase()
+                .replaceAll("\\b(eco|organic|friendly|certified|premium|gold|silver|natural|bamboo|bio|pure|green|kg|g|pack|1kg|5kg|10kg|litre|l|ml|gm)\\b", "")
+                .replaceAll("[^a-z\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        return Arrays.stream(cleaned.split("\\s+"))
+                .filter(w -> w.length() >= 3)
+                .max(Comparator.comparingInt(String::length))
+                .orElse("product");
     }
 }

@@ -9,9 +9,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByEcoCertifiedTrue();
     List<Product> findByEcoCertifiedTrueOrderByCarbonImpactAsc();
-    Optional<Product> findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(String namePart);
-    List<Product> findByEcoRequestedTrue();
 
-    // CORRECT METHOD NAME FOR JPA RELATIONSHIP
+    Optional<Product> findFirstByEcoCertifiedTrueAndNameContainingIgnoreCase(String namePart);
+    
+    Optional<Product> findFirstByEcoCertifiedFalseAndNameContainingIgnoreCase(String keyword);
+
+    List<Product> findByEcoRequestedTrue();
     List<Product> findBySeller_Id(Long sellerId);
+    List<Product> findByEcoCertifiedTrueAndNameContainingIgnoreCase(String name);
+
+    List<Product> findByEcoCertifiedFalse();
 }

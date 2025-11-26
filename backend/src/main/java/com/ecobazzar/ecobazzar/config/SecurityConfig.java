@@ -1,6 +1,9 @@
 package com.ecobazzar.ecobazzar.config;
 
 import com.ecobazzar.ecobazzar.security.JwtFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,35 +32,53 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+      http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+          // Auth endpoints
+          .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 
-                .requestMatchers(HttpMethod.GET, "/api/products/seller").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_SELLER", "ROLE_ADMIN")
+          // Swagger
+          .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/admin-request/pending").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/admin-request/approve/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/admin-request/reject/**").hasAuthority("ROLE_ADMIN")
+          // Public product browsing
+          .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
 
-                .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/*").permitAll()
+          // Reports (USER only)
+          .requestMatchers("/api/reports/user/**").hasRole("USER")
 
-                .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**").authenticated()
-                .requestMatchers("/api/admin-request/request").authenticated()
-                .requestMatchers("/api/admin-request/has-pending").authenticated()
+          // Seller endpoints
+          .requestMatchers(HttpMethod.GET, "/api/products/seller").hasAnyRole("SELLER", "ADMIN")
+          .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("SELLER", "ADMIN")
+          .requestMatchers(HttpMethod.PUT,  "/api/products/**").hasAnyRole("SELLER", "ADMIN")
+          .requestMatchers(HttpMethod.DELETE,"/api/products/**").hasAnyRole("SELLER", "ADMIN")
 
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+          // Admin endpoints
+          .requestMatchers("/api/admin/**").hasRole("ADMIN")
+          .requestMatchers("/api/admin-request/pending").hasRole("ADMIN")
+          .requestMatchers("/api/admin-request/approve/**").hasRole("ADMIN")
+          .requestMatchers("/api/admin-request/reject/**").hasRole("ADMIN")
 
-        return http.build();
+          // Eco-certification requests (any logged-in user)
+          .requestMatchers("/api/admin-request/request").authenticated()
+          .requestMatchers("/api/admin-request/has-pending").authenticated()
+
+          // Everything else must be authenticated
+          .anyRequest().authenticated()
+        )
+        .exceptionHandling(ex -> ex
+          // 401 for missing/invalid token
+          .authenticationEntryPoint((req, res, e) ->
+              res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+          // 403 for logged-in but insufficient role
+          .accessDeniedHandler((req, res, e) ->
+              res.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
+        )
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+      return http.build();
     }
 
     @Bean
